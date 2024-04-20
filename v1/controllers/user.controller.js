@@ -106,7 +106,8 @@ exports.login = async (req, res) => {
         let text = `${otp}`;
 
         if (!user) {
-            sendMail(email, text);
+            let sendEmail = await sendMail(email, text);
+            if(!sendEmail) res.status(400).send({status:false , message:"email not send"})
             const newUser = await User.create({ email, otp, created_at: new Date(), updated_at: new Date() });
             const responseData = LoginResponse(newUser);
             return sendResponse(res, WEB_STATUS_CODE.OK, STATUS_CODE.SUCCESS, 'USER.login_success', responseData, req.headers.lang);
@@ -124,7 +125,8 @@ exports.login = async (req, res) => {
         }
 
 
-        sendMail(email, text);
+       let sendEmail = await sendMail(email, text);
+        if(!sendEmail) res.status(400).send({status:false , message:"email not send"})
         user.otp = text;
         await user.save();
 
