@@ -244,7 +244,8 @@ exports.bookedPuja = async (req, res) => {
         if (!pujaData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.not_found', {}, req.headers.lang);
 
-        const slotData = await Slot.findOneAndUpdate({ _id: slot_id, templeId: temple_id });
+        //const slotData = await Slot.findOneAndUpdate({ _id: slot_id, templeId: temple_id });
+        const slotData = await Slot.findOne({ _id: slot_id, templeId: temple_id });
 
         if (!slotData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.slots_not_found', {}, req.headers.lang);
@@ -258,7 +259,7 @@ exports.bookedPuja = async (req, res) => {
 
         // Calculate the duration in minutes
         const duration = endMinutes - startMinutes;
-            reqBody.templeId = temple_id,
+        /*    reqBody.templeId = temple_id,
             reqBody.TemplepujaId = temple_puja_id,
             reqBody.userId = userId,
             reqBody.slotId = slot_id,
@@ -271,8 +272,25 @@ exports.bookedPuja = async (req, res) => {
             reqBody.date = moment(date).format('DD/MM/YYYY');
         reqBody.created_at = dateFormat.set_current_timestamp()
         reqBody.updated_at = dateFormat.set_current_timestamp()
+        */
+        const bookingData = {
+            templeId: temple_id,
+            TemplepujaId : temple_puja_id,
+            userId: userId,
+            slotId: slot_id,
+            email: email,
+            mobile_number: mobile_number,
+            name: name,
+            start_time: start_time,
+            end_time: end_time,
+            date: moment(date).format('DD/MM/YYYY'),
+            created_at: dateFormat.set_current_timestamp(),
+            updated_at: dateFormat.set_current_timestamp()
+        };
 
-        const bookings = await Booking.create(reqBody)
+        console.log('bookingData:', bookingData);
+        //const bookings = await Booking.create(reqBody)
+        const bookings = await Booking.create(bookingData);
 
         const responseData = {
             booking_id: bookings._id,
@@ -734,11 +752,12 @@ exports.getSlotsWithBookedData = async (req, res) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 date: data.date,
-                temple_name: data.templeId.temple_name,
-                temple_id: data.templeId._id,
-                puja_id: data.TemplepujaId.pujaId,
-                temple_puja_id: data.TemplepujaId._id,
-                duration: data.TemplepujaId.duration
+                //temple_name: data.templeId.temple_name,
+                //temple_name: "",
+                //temple_id: data.templeId,
+                //puja_id: data.TemplepujaId.pujaId,
+                //temple_puja_id: data.TemplepujaId._id,
+                //duration: data.TemplepujaId.duration
             };
         })) || [];
         
