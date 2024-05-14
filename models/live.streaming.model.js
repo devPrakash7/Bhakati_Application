@@ -1,9 +1,15 @@
 
+
 const mongoose = require('mongoose')
 
 
 const LiveStreamSchema = new mongoose.Schema({
 
+    guruId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Guru',
+        default: null
+    },
     templeId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'temple',
@@ -24,6 +30,10 @@ const LiveStreamSchema = new mongoose.Schema({
     status: {
         type: String,
         default: null
+    },
+    event_type:{
+        type:String,
+        default:null
     },
     reconnect_window: {
         type: String,
@@ -52,5 +62,5 @@ const LiveStreamSchema = new mongoose.Schema({
 })
 
 
-const TempleLiveStreaming = mongoose.model('TempleLiveStreaming', LiveStreamSchema);
-module.exports = TempleLiveStreaming
+const LiveStreaming = mongoose.model('livestreaming', LiveStreamSchema);
+module.exports = LiveStreaming

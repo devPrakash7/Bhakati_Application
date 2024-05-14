@@ -8,7 +8,7 @@ const { templeLogin, logout, getTempleProfile,
     addBankDetailsByAdmin,
     AllBankList, updateProfileImage,
     signUp,
-    uploadTempleImage } = require('../controller/Temple.controller');
+    uploadTempleImage , webHooks} = require('../controller/Temple.controller');
 const router = express.Router();
 const TempleAuth = require('../../middleware/temple.auth');
 const authenticate = require('../../middleware/authenticate')
@@ -21,7 +21,7 @@ const { signup_validator, ValidatorResult, temple_login_validator, get_profile_t
     update_bank_details_validator,
     add_pandit_validator,
     get_pandit_validator,
-    update_pandit_details_validator } = require('../../validation/temple.validator')
+    update_pandit_details_validator } = require('../../validation/temple.validator');
 
 
 
@@ -48,7 +48,7 @@ router.post('/getTempleProfileByAdmin', get_profile_temple_validator, ValidatorR
 router.put('/updateTempleProfile', update_temple_profile_validator, ValidatorResult, TempleAuth, updateTempleProfile)
 router.post('/addBankDetailsByAdmin', upload.single('logo'), authenticate, addBankDetailsByAdmin);
 router.get('/BankList', get_all_bank_list_validator, ValidatorResult, AllBankList);
-
+router.post('/webhooks' , webHooks)
 
 
 
