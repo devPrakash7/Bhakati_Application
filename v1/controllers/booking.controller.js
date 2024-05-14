@@ -904,6 +904,7 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
 
             // Loop until event duration is accommodated or until no more adjacent free slots are available
             let count = 0;
+            let slotEndCaptured = false;
             while (totalDuration < newBookDurationInMinutes && nextSlotStart < slotEnd) {
                 count ++;
                 // Calculate end time of next slot
@@ -925,8 +926,11 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 // If next slot is not booked, include it in available slots
                 if (!isNextSlotBooked) {
                     //currentSlotEnd = nextSlotEnd;
-                    tempCurrentSlotEnd = nextSlotEnd;
                     totalDuration += slotDurationInMinutes;
+                    if(!slotEndCaptured) {
+                        tempCurrentSlotEnd = nextSlotEnd;
+                        slotEndCaptured = true;
+                    }
                     //console.log('...totalDuration:', totalDuration);
                 } else {
                     break; // Break loop if next slot is booked
