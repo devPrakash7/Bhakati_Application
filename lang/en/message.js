@@ -121,7 +121,8 @@ module.exports = {
         upload_success: 'temple image uploaded successfully',
         account_verify: 'temple account verify successfully',
         valid_bank_name: 'please enter valid bank name',
-        video_not_found: 'video data not found'
+        video_not_found: 'video data not found',
+        live_streamin_update:"successfully update our livestreaming data"
     },
 
     'LIVESTREAM': {

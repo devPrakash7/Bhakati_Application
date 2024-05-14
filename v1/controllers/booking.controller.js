@@ -231,7 +231,6 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
 
 
 
-
 exports.bookedPuja = async (req, res) => {
 
     try {
@@ -973,7 +972,8 @@ exports.getSlotsWithBookedData = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         //const bookingDate = moment(reqBody.date, "DD/MM/YYYY").format("MM/DD/YYYY");
-        const bookingDate = moment(reqBody.date, "DD/MM/YYYY").format("DD/MM/YYYY");
+        // const bookingDate = moment(reqBody.date, "DD/MM/YYYY").format("DD/MM/YYYY");
+        const bookingDate = moment(date, "DD/MM/YYYY").format("MM/DD/YYYY")
         console.log('bookingDate:', bookingDate);
 
         //const bookings = await Booking.find({ templeId: templeId }).populate('templeId', 'start_time', 'end_time')

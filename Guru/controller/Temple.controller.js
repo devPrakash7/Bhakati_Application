@@ -5,22 +5,26 @@ const { isValid } = require("../../services/blackListMail");
 const constants = require("../../config/constants");
 const bcrypt = require('bcryptjs')
 const Temple = require('../../models/temple.model');
-const { TempleLoginReponse, TempleReponse, TempleLiveStreamingReponse } = require('../../ResponseData/Temple.reponse')
-const { guruLoginResponse } = require('../../ResponseData/Guru.response')
 const dateFormat = require('../../helper/dateformat.helper')
 const Bank = require('../../models/bankDetails.model');
 const Pandit = require('../../models/pandit.model');
 const Puja = require('../../models/puja.model');
-const LiveStream = require('../../models/liveStreaming.model');
+const LiveStreaming = require('../../models/live.streaming.model');
 const Video = require('../../models/uploadVideo.model');
 const axios = require('axios');
 const { getData, minutesToSeconds } = require('../services/views.services')
-const TempleLiveStreaming = require('../../models/templeLiveStream.model')
 const User = require('../../models/user.model');
 const { sendOTP, resendOTP, verifyOTP } = require('../../services/otp.service')
 const jwt = require('jsonwebtoken');
 const { JWT_SECRET } = require('../../keys/development.keys');
 const TempleBankDetails = require('../../models/templeBankDetail.model')
+const Mux = require('@mux/mux-node');
+const mux = new Mux({
+    tokenId: MUX_TOKEN_ID,
+    tokenSecret: MUX_TOKEN_SECRET,
+    webhookSecret: WEBHOOKSCRETKEY,
+});
+
 
 
 
@@ -60,9 +64,9 @@ exports.signUp = async (req, res) => {
             darsan: templeData.darsan,
             puja: templeData.puja,
             category: templeData.category,
-            opening_time:templeData.opening_time,
-            closing_time:templeData.closing_time,
-            puja_list:templeData.puja_list,
+            opening_time: templeData.opening_time,
+            closing_time: templeData.closing_time,
+            puja_list: templeData.puja_list,
             contact_person_name: templeData.contact_person_name,
             contact_person_designation: templeData.contact_person_designation,
             created_at: templeData.created_at,
@@ -110,8 +114,8 @@ exports.uploadTempleImage = async (req, res) => {
             state: temple.state,
             district: temple.district,
             category: temple.category,
-            opening_time:temple.opening_time,
-            closing_time:temple.closing_time,
+            opening_time: temple.opening_time,
+            closing_time: temple.closing_time,
             feature_image_url: temple.background_image,
             contact_person_name: temple.contact_person_name,
             contact_person_designation: temple.contact_person_designation,
@@ -174,8 +178,8 @@ exports.templeLogin = async (req, res) => {
             state: temple.state,
             district: temple.district,
             category: temple.category,
-            opening_time:temple.opening_time,
-            closing_time:temple.closing_time,
+            opening_time: temple.opening_time,
+            closing_time: temple.closing_time,
             contact_person_name: temple.contact_person_name,
             contact_person_designation: temple.contact_person_designation,
             tokens: temple.tokens,
@@ -240,7 +244,7 @@ exports.getTempleProfile = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const TempleData = await TempleLiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId }).limit(limit)
+        const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId }).limit(limit)
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number email contact_person_name category darsan puja contact_person_designation');
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit)
@@ -256,8 +260,8 @@ exports.getTempleProfile = async (req, res) => {
                 user_type: templeData.user_type,
                 location: templeData.location,
                 category: templeData.category,
-                opening_time:templeData.opening_time,
-                closing_time:templeData.closing_time,
+                opening_time: templeData.opening_time,
+                closing_time: templeData.closing_time,
                 darsan: templeData.darsan,
                 puja: templeData.puja,
                 state: templeData.state,
@@ -325,7 +329,7 @@ exports.getTempleProfileByAdmin = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const TempleData = await TempleLiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId }).limit(limit)
+        const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId }).limit(limit)
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number category puja darsan email contact_person_name contact_person_designation');
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit)
@@ -341,8 +345,8 @@ exports.getTempleProfileByAdmin = async (req, res) => {
                 user_type: templeData.user_type,
                 location: templeData.location,
                 category: templeData.category,
-                opening_time:templeData.opening_time,
-                closing_time:templeData.closing_time,
+                opening_time: templeData.opening_time,
+                closing_time: templeData.closing_time,
                 darsan: templeData.darsan,
                 puja: templeData.puja,
                 state: templeData.state,
@@ -399,8 +403,8 @@ exports.updateTempleProfile = async (req, res) => {
         if (temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-           temple_name = reqBody.temple_name
-            mobile_number = reqBody.mobile_number,
+        temple_name = reqBody.temple_name
+        mobile_number = reqBody.mobile_number,
             email = reqBody.email,
             location = reqBody.location,
             state = reqBody.state,
@@ -408,12 +412,12 @@ exports.updateTempleProfile = async (req, res) => {
             contact_person_name = reqBody.contact_person_name,
             contact_person_designation = reqBody.contact_person_designation,
             opening_time = reqBody.opening_time
-           closing_time = reqBody.closing_time
-           category = reqBody.category
-   
+        closing_time = reqBody.closing_time
+        category = reqBody.category
+
         const templeData = await Temple.findOneAndUpdate({ _id: templeId }, reqBody, { new: true })
 
-        if(!templeData)
+        if (!templeData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.not_found', {}, req.headers.lang);
 
         const responseData = {
@@ -495,10 +499,11 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
             live_stream_id: response.data.data.id,
             playback_id: ids[0],
             created_at: response.data.data.created_at,
+            event_type:"pending",
             templeId: templeId
         } || {}
 
-        const liveStreamingData = await TempleLiveStreaming.create(liveStreamData)
+        const liveStreamingData = await LiveStreaming.create(liveStreamData)
 
         const responseData = {
             id: liveStreamingData._id,
@@ -508,7 +513,9 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
             plackback_id: liveStreamingData.plackback_id,
             live_stream_id: liveStreamingData.live_stream_id,
             created_at: liveStreamingData.created_at,
-            templeId: liveStreamingData.templeId
+            templeId: liveStreamingData.templeId,
+            status:liveStreamingData.status,
+            event_type:liveStreamingData.event_type
         } || {}
 
         return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'GURU.guru_live_stream_created', responseData, req.headers.lang);
@@ -535,7 +542,7 @@ exports.getTempleLiveStream = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const liveStreamData = await TempleLiveStreaming.find({ live_stream_id: { $in: LiveStreamingData } }).limit(parseInt(limit))
+        const liveStreamData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData } }).limit(parseInt(limit))
             .populate('templeId', 'temple_name category temple_image background_image _id state district location mobile_number open_time closing_time created_at');
 
         if (!liveStreamData || liveStreamData.length == 0)
@@ -1085,3 +1092,26 @@ exports.generate_refresh_tokens = async (req, res, next) => {
 
 
 
+
+
+exports.webHooks = async (req, res) => {
+
+    try {
+
+        const reqBody = req.body;
+        console.log("reqBody....", reqBody.object.id);
+        const livestreamingUpdated = await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
+            {
+                $set: {
+                    status: reqBody.object.type,
+                    event_type: reqBody.type,
+                }
+            }, { new: true })
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.live_streamin_update', livestreamingUpdated , req.headers.lang);
+
+    } catch (err) {
+        console.log('err(webHooks)...', err)
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang)
+    }
+}

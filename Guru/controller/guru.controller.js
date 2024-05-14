@@ -14,7 +14,7 @@ const { guruResponseData, guruLiveStreamResponse, guruLoginResponse } = require(
 const Video = require('../../models/uploadVideo.model');
 const User = require('../../models/user.model');
 const { v4: uuidv4 } = require('uuid');
-const GuruLiveStreaming = require('../../models/GuruLiveStreaming.model')
+const LiveStreaming = require('../../models/live.streaming.model')
 const { minutesToSeconds, verifyWebhookSignature, handleActiveLiveStream, getLiveStreamInfo } = require('../services/views.services');
 const { GURU } = require('../../lang/en/message');
 
@@ -276,7 +276,7 @@ exports.getGuruProfile = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const GuruData = await GuruLiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId }).limit(limit)
+        const GuruData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId }).limit(limit)
             .populate('guruId', 'guru_name guru_image _id email mobile_number gurus_id expertise created_at');
 
         const guruList = await Guru.find({ user_type: 4 }).sort().limit(limit)
@@ -357,7 +357,7 @@ exports.getGuruProfileByAdmin = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const GuruData = await GuruLiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId }).limit(limit)
+        const GuruData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId }).limit(limit)
             .populate('guruId', 'guru_name guru_image _id email mobile_number gurus_id expertise created_at');
 
         const guruList = await Guru.find({ user_type: 4 }).sort().limit(limit)
@@ -571,7 +571,7 @@ exports.GuruCreateNewLiveStream = async (req, res) => {
             guruId: guruId,
         }
 
-        const guruData = await GuruLiveStreaming.create(liveStreamData)
+        const guruData = await LiveStreaming.create(liveStreamData)
 
         const responseData = {
             id: guruData._id,
@@ -609,7 +609,7 @@ exports.getLiveStreamByGuru = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const GuruData = await GuruLiveStreaming.find({
+        const GuruData = await LiveStreaming.find({
             live_stream_id: { $in: LiveStreamingData },
             guruId: { $ne: null } // Adding logic for guruId not equal to null
         }).limit(limit).populate('guruId', '_id guru_name email mobile_number expertise');
