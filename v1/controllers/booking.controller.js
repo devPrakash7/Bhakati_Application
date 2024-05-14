@@ -25,7 +25,6 @@ exports.createdNewSlot = async (req, res) => {
 
         const reqBody = req.body;
         const templeId = req.temple._id;
-        console.log("reBody.......", reqBody)
 
         const findAdmin = await Temple.findById(templeId);
 
@@ -241,12 +240,14 @@ exports.bookedPuja = async (req, res) => {
         if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.USER)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const pujaData = await TemplePuja.findOne({ _id: temple_puja_id, templeId: temple_id })
+        const pujaData = await TemplePuja.findOne({ _id: temple_puja_id, templeId: temple_id }).populate("templeId")
+
+        console.log("data...." , pujaData)
 
         if (!pujaData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.puja_not_available', {}, req.headers.lang);
 
-        const slotData = await Slot.findOne({ _id: slot_id, templeId: temple_id });
+        const slotData = await Slot.findOne({ _id: slot_id, templeId: temple_id }).populate("templeId")
 
         if (!slotData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.slots_not_found', {}, req.headers.lang);
@@ -269,7 +270,7 @@ exports.bookedPuja = async (req, res) => {
             is_reserved: true,
             start_time: start_time,
             end_time: end_time,
-            date: moment(date).format('DD/MM/YYYY'),
+            date: moment(date, 'MM/DD/YYYY', true).format("DD/MM/YYYY"),
             created_at: dateFormat.set_current_timestamp(),
             updated_at: dateFormat.set_current_timestamp()
         };
@@ -279,7 +280,7 @@ exports.bookedPuja = async (req, res) => {
         const responseData = {
             booking_id: bookings._id,
             puja_id: pujaData._id,
-            puja_name: pujaData.pujaName,
+            puja_name: pujaData.puja_name,
             temple_puja_id: bookings.TemplepujaId,
             duration: pujaData.duration,
             price: pujaData.price,
@@ -289,7 +290,6 @@ exports.bookedPuja = async (req, res) => {
             puja_image: pujaData.image,
             temple_id: pujaData.templeId._id,
             temple_name: pujaData.templeId.temple_name,
-            temple_image_url: pujaData.templeId.temple_image,
             email: bookings.email,
             mobile_number: bookings.mobile_number,
             name: bookings.name,
@@ -405,22 +405,18 @@ exports.templeBookedList = async (req, res) => {
 
         const temple_id = req.temple._id;
         const { limit, from_date, to_date } = req.query;
+        console.log("data...." , req.query)
 
         // Find the admin temple
         const findAdmin = await Temple.findById(temple_id);
-        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE) {
+        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE) 
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
-        }
-
+        
         // Parse the limit and dates
-        const parsedLimit = parseInt(limit, 10) || 10; // Default limit to 10 if not provided
+        const parsedLimit = parseInt(limit, 10) || 10; 
         const startDate = from_date ? moment(from_date, 'DD/MM/YYYY').toDate() : null;
         const endDate = to_date ? moment(to_date, 'DD/MM/YYYY').toDate() : null;
 
-        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("DD/MM/YYYY");
-        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("DD/MM/YYYY");
-
-        let templeQuery = { templeId: temple_id };
         // Construct the query for bookings
         let bookingQuery = { templeId: temple_id };
         if (startDate && endDate) {
