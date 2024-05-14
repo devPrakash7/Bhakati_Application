@@ -65,17 +65,22 @@ exports.getAllTheSlots = async (req, res) => {
         const templeId = req.temple._id;
         const { limit } = req.query;
 
-        const findAdmin = await Temple.findById(templeId);
+        const temple = await Temple.findById(templeId);
 
-        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
+        if (!temple || temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const slotList = await Slot.find({ templeId: templeId }).populate("templeId", "temple_name temple_image _id").limit(parseInt(limit)).sort()
 
+        
+
         const responseData = slotList.map(data => ({
-            temple_id: data.templeId._id,
-            temple_name: data.templeId.temple_name,
-            temple_image_url: data.templeId.temple_image,
+            //temple_id: data.templeId,
+            //temple_name: data.templeId.temple_name,
+            //temple_image_url: data.templeId.temple_image,
+            temple_id: templeId,
+            temple_name: temple.temple_name,
+            temple_image_url: temple.temple_image,
             slot_id: data._id,
             start_time: data.start_time,
             end_time: data.end_time,
@@ -180,9 +185,9 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
         const templeId = req.temple._id
         const { limit } = req.query;
 
-        const findAdmin = await Temple.findById(templeId);
+        const temple = await Temple.findById(templeId);
 
-        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
+        if (!temple || temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const bookings = await Booking.find({ templeId: templeId }).populate('userId').populate('templeId').populate('TemplepujaId')
@@ -204,8 +209,10 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
                 user_email: data.userId.email,
                 user_mobile_number: data.userId.mobile_number,
                 user_id: data.userId._id,
-                temple_name: data.templeId.temple_name,
-                temple_id: data.templeId._id,
+                //temple_name: data.templeId.temple_name,
+                //temple_id: data.templeId._id,
+                temple_name: temple.temple_name,
+                temple_id: temple._id,
                 puja_id: data.TemplepujaId.pujaId,
                 temple_puja_id: data.TemplepujaId._id,
                 puja_name: data.TemplepujaId.puja_name,
@@ -328,7 +335,7 @@ exports.bookedPuja = async (req, res) => {
 
 
 
-exports.bookedList = async (req, res) => {
+exports.bookedListBackup = async (req, res) => {
 
     try {
 
@@ -344,11 +351,25 @@ exports.bookedList = async (req, res) => {
             .sort()
             .limit(parseInt(limit));
 
+            console.log('temple_id, date:', temple_id, date);
+         
+        //const templeData = await TemplePuja.find({ templeId: '663ac820a87c463938a038bd', date: date })
         const templeData = await TemplePuja.find({ templeId: temple_id, date: date })
             .populate('templeId', "temple_name _id temple_image")
             .select('templeId puja_name duration price _id pujaId date');
 
+            console.log('templeData:', templeData);
+
+            // Extract unique templeIds from booking
+        //const templeIds = bookings.map(book => new ObjectID(book.templeId));
+        const templeIds = bookings.map(book => book.templeId);
+
+        // Fetch temple info for the templeIds
+        const temples = await Temple.find({ _id: { $in: templeIds } });
+
         const responseData = await Promise.all(bookings.map(async (data) => {
+            const temple = temples.find(temple => temple._id.equals(data.templeId));
+            const templePujaData = templeData.find(td => td._id.equals(data.TemplepujaId));
             return {
                 booking_id: data._id,
                 name: data.name,
@@ -363,7 +384,19 @@ exports.bookedList = async (req, res) => {
                 user_email: data.userId.email,
                 user_mobile_number: data.userId.mobile_number,
                 user_id: data.userId._id,
-                templeData: templeData.map(data => ({
+                puja:{
+                    temple_name: temple.temple_name,
+                    temple_id: temple._id,
+                    temple_image_url: temple.temple_image,
+                    puja_name: templePujaData.puja_name,
+                    duration: templePujaData.duration,
+                    price: templePujaData.price,
+                    date: templePujaData.date,
+                    temple_puja_id: data.TemplepujaId,
+                    master_puja_id: templePujaData.pujaId
+                },
+                templeData: templeData
+                .map(data => ({
                     temple_name: data.templeId.temple_name,
                     temple_id: data.templeId._id,
                     temple_image_url: data.templeId.templeId,
@@ -386,8 +419,216 @@ exports.bookedList = async (req, res) => {
 }
 
 
+exports.templeBookedList = async (req, res) => {
 
-exports.userBookingList = async (req, res) => {
+    try {
+
+        const temple_id = req.temple._id;
+        //const userId = req.user._id;
+        const { limit, from_date, to_date } = req.query;
+
+        const findAdmin = await Temple.findById(temple_id);
+
+        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const bookings = await Booking.find({ templeId: temple_id }).populate('userId')
+            .sort()
+            .limit(parseInt(limit));
+
+            const startDate = from_date
+            const endDate = to_date;
+    
+            //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("MM/DD/YYYY");
+            //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("MM/DD/YYYY");
+     
+        let templeQuery = {templeId: temple_id}; 
+        if (startDate && endDate) {
+            templeQuery.date = {
+                $gte: startDate, // greater than or equal to start date
+                $lte: endDate // less than or equal to end date
+            };
+        }
+
+        console.log('query:', templeQuery);
+
+        //console.log('temple_id, date:', temple_id, date);
+         
+        //const templeData = await TemplePuja.find({ templeId: '663ac820a87c463938a038bd', date: date })
+        const templeData = await TemplePuja.find(templeQuery)
+            .populate('templeId', "temple_name _id temple_image")
+            .select('templeId puja_name duration price _id pujaId date');
+
+            console.log('templeData:', templeData);
+
+            // Extract unique templeIds from booking
+        //const templeIds = bookings.map(book => new ObjectID(book.templeId));
+        const templeIds = bookings.map(book => book.templeId);
+
+        // Fetch temple info for the templeIds
+        const temples = await Temple.find({ _id: { $in: templeIds } });
+
+        const responseData = await Promise.all(bookings.map(async (data) => {
+            const temple = temples.find(temple => temple._id.equals(data.templeId));
+            const templePujaData = templeData.find(td => td._id.equals(data.TemplepujaId));
+            return {
+                booking_id: data._id,
+                name: data.name,
+                email: data.email,
+                mobile_number: data.mobile_number,
+                available: data.available,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                created_at: data.created_at,
+                date: data.date,
+                user_name: data.userId.full_name,
+                user_email: data.userId.email,
+                user_mobile_number: data.userId.mobile_number,
+                user_id: data.userId._id,
+                puja:{
+                    temple_name: temple.temple_name,
+                    temple_id: temple._id,
+                    temple_image_url: temple.temple_image,
+                    puja_name: templePujaData.puja_name,
+                    duration: templePujaData.duration,
+                    price: templePujaData.price,
+                    date: templePujaData.date,
+                    temple_puja_id: data.TemplepujaId,
+                    master_puja_id: templePujaData.pujaId
+                }
+                /*,
+                templeData: templeData
+                .map(data => ({
+                    temple_name: data.templeId.temple_name,
+                    temple_id: data.templeId._id,
+                    temple_image_url: data.templeId.templeId,
+                    puja_name: data.puja_name,
+                    duration: data.duration,s
+                    price: data.price,
+                    date: data.date,
+                    temple_puja_id: data._id,
+                    master_puja_id: data.pujaId
+                })) || [] */
+            };
+        })) || [];
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booked_list', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.error("Error in bookedList:", err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+}
+
+
+
+exports.userBookedList = async (req, res) => {
+
+    try {
+
+        const userId = req.user._id;
+        const { limit, from_date, to_date } = req.query;
+
+        const user = await User.findById(userId);
+
+        if (!user || user.user_type !== constants.USER_TYPE.USER)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const startDate = from_date
+        const endDate = to_date;
+
+        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("MM/DD/YYYY");
+        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("MM/DD/YYYY");
+
+        let query = {userId: userId};
+        //let templeQuery = {templeId: temple_id};
+        let templeQuery = {templeId: '663ac820a87c463938a038bd'};
+        if (startDate && endDate) {
+            query.date = {
+                $gte: startDate, // greater than or equal to start date
+                $lte: endDate // less than or equal to end date
+            };
+
+            templeQuery.date = {
+                $gte: startDate, // greater than or equal to start date
+                $lte: endDate // less than or equal to end date
+            };
+        }
+
+        console.log('query:', query);
+
+        const bookings = await Booking.find(query).populate('userId')
+            .sort()
+            .limit(parseInt(limit));
+
+        //console.log('temple_id, date:', temple_id, date);
+         
+        const templeData = await TemplePuja.find(templeQuery)
+            .populate('templeId', "temple_name _id temple_image")
+            .select('templeId puja_name duration price _id pujaId date');
+
+        //console.log('templeData:', templeData);
+
+            // Extract unique templeIds from booking
+        //const templeIds = bookings.map(book => new ObjectID(book.templeId));
+        const templeIds = bookings.map(book => book.templeId);
+
+        // Fetch temple info for the templeIds
+        const temples = await Temple.find({ _id: { $in: templeIds } });
+
+        const responseData = await Promise.all(bookings.map(async (data) => {
+            const temple = temples.find(temple => temple._id.equals(data.templeId));
+            const templePujaData = templeData.find(td => td._id.equals(data.TemplepujaId));
+            return {
+                booking_id: data._id,
+                name: data.name,
+                email: data.email,
+                mobile_number: data.mobile_number,
+                available: data.available,
+                start_time: data.start_time,
+                end_time: data.end_time,
+                created_at: data.created_at,
+                date: data.date,
+                user_name: data.userId.full_name,
+                user_email: data.userId.email,
+                user_mobile_number: data.userId.mobile_number,
+                user_id: data.userId._id,
+                puja:{
+                    temple_name: temple.temple_name,
+                    temple_id: temple._id,
+                    temple_image_url: temple.temple_image,
+                    puja_name: templePujaData.puja_name,
+                    duration: templePujaData.duration,
+                    price: templePujaData.price,
+                    date: templePujaData.date,
+                    temple_puja_id: data.TemplepujaId,
+                    master_puja_id: templePujaData.pujaId
+                }
+                /*,
+                templeData: templeData
+                .map(data => ({
+                    temple_name: data.templeId.temple_name,
+                    temple_id: data.templeId._id,
+                    temple_image_url: data.templeId.templeId,
+                    puja_name: data.puja_name,
+                    duration: data.duration,
+                    price: data.price,
+                    date: data.date,
+                    temple_puja_id: data._id,
+                    master_puja_id: data.pujaId
+                })) || [] */
+            };
+        })) || [];
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booked_list', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.error("Error in bookedList:", err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+}
+
+exports.userBookingListOld = async (req, res) => {
 
     try {
 
@@ -602,6 +843,9 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
     
     console.log(`start:${slotStartTime}, end:${slotEndTime}, newBookDuration:${newBookDurationInMinutes}, slotDuration:${slotDurationInMinutes}`);
 
+    console.log('bookingDate:', bookingDate);
+
+    bookingDate = moment(bookingDate, "DD/MM/YYYY").format("YYYY-MM-DD");
     
     const slotStart = new Date(bookingDate + ' ' + startTime);
     const slotEnd = new Date(bookingDate + ' ' + endTime); 
@@ -625,12 +869,7 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
          * The end time of the current slot falls within the start and end time of a booked slot.
          * The start time of the current slot is before the start time of a booked slot and the end time of the current slot is after the end time of the booked slot.
          */
-        /* const isBooked = bookedSlots.some(slot => {
-            return (currentSlotStart >= new Date(bookingDate + ' ' + convertTo24Hour(slot.start_time)) && currentSlotStart < new Date(bookingDate + ' ' + convertTo24Hour(v.end_time))) ||
-                   (currentSlotEnd > new Date(bookingDate + ' ' + convertTo24Hour(slot.start_time)) && currentSlotEnd <= new Date(bookingDate + ' ' + convertTo24Hour(v.end_time))) ||
-                   (currentSlotStart <= new Date(bookingDate + ' ' + convertTo24Hour(slot.start_time)) && currentSlotEnd >= new Date(bookingDate + ' ' + convertTo24Hour(v.end_time)));
-        });*/
-
+       
         const isBooked = bookedSlots.some(slot => {
             let bookedSlotStartTime = new Date(bookingDate + ' ' + convertTo24Hour(slot.start_time));
             let bookedSlotEndTime = new Date(bookingDate + ' ' + convertTo24Hour(slot.end_time));
@@ -660,13 +899,18 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
             let totalDuration = slotDurationInMinutes;
             let nextSlotStart = currentSlotEnd; // Initialize start time of next slot
             
-
+            let tempCurrentSlotEnd = currentSlotEnd;
             //console.log(`totalDuration:${totalDuration}, newBookDurationInMinutes:${newBookDurationInMinutes}, nextSlotStart:${convertToLocalTime(nextSlotStart)}, nextSlotStart < slotEnd:${nextSlotStart < slotEnd}`);
 
             // Loop until event duration is accommodated or until no more adjacent free slots are available
+            let count = 0;
             while (totalDuration < newBookDurationInMinutes && nextSlotStart < slotEnd) {
+                count ++;
                 // Calculate end time of next slot
                 let nextSlotEnd = new Date(nextSlotStart.getTime() + slotDurationInMinutes * 60000);
+                if(count == 1) {
+                    currentSlotEnd = nextSlotEnd;
+                }
                 
                 // Check if next slot is booked
                 const isNextSlotBooked = bookedSlots.some(slot => {
@@ -680,7 +924,8 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 //console.log('isNextSlotBooked:', isNextSlotBooked);
                 // If next slot is not booked, include it in available slots
                 if (!isNextSlotBooked) {
-                    currentSlotEnd = nextSlotEnd;
+                    //currentSlotEnd = nextSlotEnd;
+                    tempCurrentSlotEnd = nextSlotEnd;
                     totalDuration += slotDurationInMinutes;
                     //console.log('...totalDuration:', totalDuration);
                 } else {
@@ -695,7 +940,7 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 //availableSlots.push({ startTime: currentSlotStart, endTime: currentSlotEnd });
                 slots.push({
                     start_time: currentSlotStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                    end_time: currentSlotEnd.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+                    end_time: tempCurrentSlotEnd.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
                     available: true
                 });
             }
@@ -722,7 +967,9 @@ exports.getSlotsWithBookedData = async (req, res) => {
         if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const bookingDate = moment(date, "DD/MM/YYYY").format("MM/DD/YYYY");
+        //const bookingDate = moment(reqBody.date, "DD/MM/YYYY").format("MM/DD/YYYY");
+        // const bookingDate = moment(reqBody.date, "DD/MM/YYYY").format("DD/MM/YYYY");
+        const bookingDate = moment(date, "DD/MM/YYYY").format("MM/DD/YYYY")
         console.log('bookingDate:', bookingDate);
 
         //const bookings = await Booking.find({ templeId: templeId }).populate('templeId', 'start_time', 'end_time')
