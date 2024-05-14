@@ -507,8 +507,6 @@ exports.userBookedList = async (req, res) => {
         const startDate = from_date
         const endDate = to_date;
 
-        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("DD/MM/YYYY");
-        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("DD/MM/YYYY");
 
         let query = { userId: userId };
         //let templeQuery = {templeId: temple_id};
@@ -525,7 +523,6 @@ exports.userBookedList = async (req, res) => {
             };
         }
 
-        console.log('query:', query);
 
         const bookings = await Booking.find(query).populate('userId')
             .sort()
@@ -541,10 +538,10 @@ exports.userBookedList = async (req, res) => {
         const temples = await Temple.find({ _id: { $in: templeIds } });
 
         const responseData = await Promise.all(bookings.map(async (data) => {
-            const temple = temples.find(temple => temple._id.equals(data.templeId));
-            const templePujaData = templeData.find(td => td._id.equals(data.TemplepujaId));
             return {
                 booking_id: data._id,
+                temple_puja_id:data.TemplepujaId,
+                temple_id:data.templeId,
                 name: data.name,
                 email: data.email,
                 mobile_number: data.mobile_number,
@@ -553,21 +550,7 @@ exports.userBookedList = async (req, res) => {
                 end_time: data.end_time,
                 created_at: data.created_at,
                 date: data.date,
-                user_name: data.userId.full_name,
-                user_email: data.userId.email,
-                user_mobile_number: data.userId.mobile_number,
                 user_id: data.userId._id,
-                puja: {
-                    temple_name: temple.temple_name,
-                    temple_id: temple._id,
-                    temple_image_url: temple.temple_image,
-                    puja_name: templePujaData.puja_name,
-                    duration: templePujaData.duration,
-                    price: templePujaData.price,
-                    date: templePujaData.date,
-                    temple_puja_id: data.TemplepujaId,
-                    master_puja_id: templePujaData.pujaId
-                }
             };
         })) || [];
 
