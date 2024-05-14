@@ -9,7 +9,7 @@ module.exports = {
     'MSG91AUTHKEY':'420181Av6QZCzj4K662068bdP1',
     'WEBHOOKSCRETKEY':'dhk0a52fdo38apoeej7asadlns2d7csj',
     'MONGODB_URI': 'mongodb+srv://root:akki909@cluster0.sm3rshd.mongodb.net/Bhakati',
-    'BASEURL': 'https://13.126.177.227:8001',
+    'BASEURL': 'https://bhakti.alphainfy.com',
     'APPID': '064f804292cf437d8d949e9e1ed01d3e',
     'APPCERTIFICATE': 'e6b6368d981c47b3bb99ad3a5ae1e4cd',
     'MUX_TOKEN_ID': '493dcd07-1454-4db5-b572-41c05b7f4ed0',

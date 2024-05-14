@@ -1092,15 +1092,13 @@ exports.generate_refresh_tokens = async (req, res, next) => {
 
 
 
-
-
 exports.webHooks = async (req, res) => {
 
     try {
 
         const reqBody = req.body;
-        console.log("reqBody....", reqBody.object.id);
-        const livestreamingUpdated = await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
+        console.log("reqBody....", reqBody);
+         await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
             {
                 $set: {
                     status: reqBody.object.type,
@@ -1108,7 +1106,7 @@ exports.webHooks = async (req, res) => {
                 }
             }, { new: true })
 
-        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.live_streamin_update', livestreamingUpdated , req.headers.lang);
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.live_streamin_update', {} , req.headers.lang);
 
     } catch (err) {
         console.log('err(webHooks)...', err)
