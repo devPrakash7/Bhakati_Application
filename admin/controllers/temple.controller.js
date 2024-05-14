@@ -27,7 +27,7 @@ exports.SearchAllTemples = async (req, res, next) => {
         const userId = req.user._id;
         const user = await User.findById(userId);
 
-        if (!user || ![constants.USER_TYPE.ADMIN, constants.USER_TYPE.USER].includes(users.user_type))
+        if (!user || ![constants.USER_TYPE.ADMIN, constants.USER_TYPE.USER].includes(user.user_type))
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const { sort, state, templename, location, district, is_verify } = req.query;
