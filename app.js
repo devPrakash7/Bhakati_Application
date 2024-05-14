@@ -24,7 +24,7 @@ const app = express();
 const bodyParser = require('body-parser')
 const fs = require("fs")
 const rithualRouter = require('./Guru/routes/rithual')
-
+const LiveStreaming = require('./models/live.streaming.model');
 
 
 app.use(flash());
@@ -73,6 +73,24 @@ app.use(cors());
 //   }
 // }));
 
+
+app.post("/webhooks" , async (req , res) => {  
+  try {
+
+    const reqBody = req.body;
+    console.log("reqBody....", reqBody);
+     await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
+        {
+            $set: {
+                status: reqBody.object.type,
+                event_type: reqBody.type,
+            }
+        }, { new: true })
+
+    }catch(err){
+         console.log("err(webhooks)" , err.message)
+    }
+})
 
 
 app.use('/v1/', indexRouter);
