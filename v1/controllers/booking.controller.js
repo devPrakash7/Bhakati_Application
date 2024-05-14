@@ -420,8 +420,8 @@ exports.templeBookedList = async (req, res) => {
         const startDate = from_date
         const endDate = to_date;
 
-        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("MM/DD/YYYY");
-        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("MM/DD/YYYY");
+        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("DD/MM/YYYY");
+        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("DD/MM/YYYY");
 
         let templeQuery = { templeId: temple_id };
         if (startDate && endDate) {
@@ -518,8 +518,8 @@ exports.userBookedList = async (req, res) => {
         const startDate = from_date
         const endDate = to_date;
 
-        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("MM/DD/YYYY");
-        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("MM/DD/YYYY");
+        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("DD/MM/YYYY");
+        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("DD/MM/YYYY");
 
         let query = { userId: userId };
         //let templeQuery = {templeId: temple_id};
