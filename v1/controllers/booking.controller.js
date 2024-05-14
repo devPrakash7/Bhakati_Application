@@ -849,7 +849,7 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
             }
 
             // If total duration is sufficient for event, add current slot to available slots
-            if (totalDuration >= newBookDurationInMinutes) {
+            if (totalDuration >= newBookDurationInMinutes && tempCurrentSlotEnd <= slotEnd) {
                 //availableSlots.push({ startTime: currentSlotStart, endTime: currentSlotEnd });
                 slots.push({
                     start_time: currentSlotStart.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
