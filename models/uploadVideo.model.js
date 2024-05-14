@@ -7,11 +7,11 @@ const videoSchema = new mongoose.Schema({
 
     templeId: {
         type: mongoose.Schema.Types.ObjectId, ref: 'temple',
-        default:null
+        default: null
     },
     guruId: {
         type: mongoose.Schema.Types.ObjectId, ref: 'Guru',
-        default:null
+        default: null
     },
     description: {
         type: String
@@ -22,21 +22,27 @@ const videoSchema = new mongoose.Schema({
     videoUrl: {
         type: String,
     },
-    muxData: {
-        playback_id: String,
-        mp4_support: String,
-        master_access: String,
-        encoding_tier: String,
-        asset_id: String,
-        created_at: String
+    event_type: {
+        type: String,
+        default: null
     },
+    status: {
+        type: String,
+        default: null
+    },
+    playback_id: String,
+    mp4_support: String,
+    master_access: String,
+    encoding_tier: String,
+    asset_id: String,
+    created_at: String,
     views: {
         type: Number,
-        default:null
+        default: null
     },
-    duration:{
-        type:Number,
-        default:null
+    duration: {
+        type: Number,
+        default: null
     },
     created_at: {
         type: String

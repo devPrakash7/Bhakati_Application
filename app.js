@@ -25,6 +25,10 @@ const bodyParser = require('body-parser')
 const fs = require("fs")
 const rithualRouter = require('./Guru/routes/rithual')
 const LiveStreaming = require('./models/live.streaming.model');
+const Video = require("./models/uploadVideo.model")
+
+
+
 
 
 app.use(flash());
@@ -74,22 +78,33 @@ app.use(cors());
 // }));
 
 
-app.post("/webhooks" , async (req , res) => {  
+app.post("/webhooks", async (req, res) => {
   try {
 
     const reqBody = req.body;
-    console.log("reqBody....", reqBody.object.id);
-     await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
-        {
-            $set: {
-                status: reqBody.object.type,
-                event_type: reqBody.type,
-            }
-        }, { new: true })
+    console.log("reqBody....", reqBody);
 
-    }catch(err){
-         console.log("err(webhooks)" , err.message)
-    }
+   const videoData =  await Video.findOneAndUpdate({ asset_id: reqBody.object.id },
+      {
+        $set:
+        {
+          status: reqBody.data.status,
+          event_type: reqBody.type
+        }
+      },
+      { new: true }
+    )
+    const livestreaingData = await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
+      {
+        $set: {
+          status: reqBody.data.status,
+          event_type: reqBody.type,
+        }
+      }, { new: true })
+
+  } catch (err) {
+    console.log("err(webhooks)", err.message)
+  }
 })
 
 
@@ -104,7 +119,7 @@ app.use('/guru/temple', templeGuruRouter);
 app.use('/guru/puja', pujaRouter);
 app.use('/temple/guru', GuruRouter);
 app.use('/guru/video', videoRouter);
-app.use('/rithual' , rithualRouter)
+app.use('/rithual', rithualRouter)
 
 
 

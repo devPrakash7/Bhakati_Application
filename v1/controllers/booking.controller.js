@@ -141,7 +141,6 @@ exports.updateSlot = async (req, res) => {
 
 
 
-
 exports.deleteSlot = async (req, res) => {
 
     try {
@@ -209,8 +208,6 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
                 user_email: data.userId.email,
                 user_mobile_number: data.userId.mobile_number,
                 user_id: data.userId._id,
-                //temple_name: data.templeId.temple_name,
-                //temple_id: data.templeId._id,
                 temple_name: temple.temple_name,
                 temple_id: temple._id,
                 puja_id: data.TemplepujaId.pujaId,
@@ -247,7 +244,7 @@ exports.bookedPuja = async (req, res) => {
         const pujaData = await TemplePuja.findOne({ _id: temple_puja_id, templeId: temple_id })
 
         if (!pujaData)
-            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.not_found', {}, req.headers.lang);
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.puja_not_available', {}, req.headers.lang);
 
         const slotData = await Slot.findOne({ _id: slot_id, templeId: temple_id });
 
@@ -400,58 +397,63 @@ exports.bookedListBackup = async (req, res) => {
 }
 
 
+
+
 exports.templeBookedList = async (req, res) => {
 
     try {
 
         const temple_id = req.temple._id;
-        //const userId = req.user._id;
         const { limit, from_date, to_date } = req.query;
 
+        // Find the admin temple
         const findAdmin = await Temple.findById(temple_id);
-
-        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
+        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE) {
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+        }
 
-        const bookings = await Booking.find({ templeId: temple_id }).populate('userId')
-            .sort()
-            .limit(parseInt(limit));
+        // Parse the limit and dates
+        const parsedLimit = parseInt(limit, 10) || 10; // Default limit to 10 if not provided
+        const startDate = from_date ? moment(from_date, 'DD/MM/YYYY').toDate() : null;
+        const endDate = to_date ? moment(to_date, 'DD/MM/YYYY').toDate() : null;
 
-        const startDate = from_date
-        const endDate = to_date;
-
-        //const startDate = moment(reqBody.from_date, "DD/MM/YYYY").format("MM/DD/YYYY");
-        //const endDate = moment(reqBody.to_date, "DD/MM/YYYY").format("MM/DD/YYYY");
-
-        let templeQuery = { templeId: temple_id };
+        // Construct the query for bookings
+        let bookingQuery = { templeId: temple_id };
         if (startDate && endDate) {
-            templeQuery.date = {
-                $gte: startDate, // greater than or equal to start date
-                $lte: endDate // less than or equal to end date
+            bookingQuery.date = {
+                $gte: startDate,
+                $lte: endDate
             };
         }
 
-        console.log('query:', templeQuery);
+        // Fetch the bookings with the specified limit
+        const bookings = await Booking.find(bookingQuery)
+            .populate('userId')
+            .sort({ date: -1 }) // Sort by date descending
+            .limit(parsedLimit);
 
-        //console.log('temple_id, date:', temple_id, date);
+        // Fetch the temple puja data within the date range
+        let pujaQuery = { templeId: temple_id };
+        if (startDate && endDate) {
+            pujaQuery.date = {
+                $gte: startDate,
+                $lte: endDate
+            };
+        }
 
-        //const templeData = await TemplePuja.find({ templeId: '663ac820a87c463938a038bd', date: date })
-        const templeData = await TemplePuja.find(templeQuery)
-            .populate('templeId', "temple_name _id temple_image")
+        const templePujaData = await TemplePuja.find(pujaQuery)
+            .populate('templeId', 'temple_name _id temple_image')
             .select('templeId puja_name duration price _id pujaId date');
 
-        console.log('templeData:', templeData);
+        // Helper function to format dates to DD/MM/YYYY using moment
+        const formatDate = (date) => {
+            return moment(date).format('DD/MM/YYYY');
+        };
 
-        // Extract unique templeIds from booking
-        //const templeIds = bookings.map(book => new ObjectID(book.templeId));
-        const templeIds = bookings.map(book => book.templeId);
-
-        // Fetch temple info for the templeIds
-        const temples = await Temple.find({ _id: { $in: templeIds } });
-
-        const responseData = await Promise.all(bookings.map(async (data) => {
-            const temple = temples.find(temple => temple._id.equals(data.templeId));
-            const templePujaData = templeData.find(td => td._id.equals(data.TemplepujaId));
+        // Map bookings to response data
+        const responseData = bookings.map(data => {
+            const temple = templePujaData.find(tp => tp.templeId._id.equals(data.templeId));
+            const puja = templePujaData.find(p => p._id.equals(data.TemplepujaId));
             return {
                 booking_id: data._id,
                 name: data.name,
@@ -460,46 +462,33 @@ exports.templeBookedList = async (req, res) => {
                 available: data.available,
                 start_time: data.start_time,
                 end_time: data.end_time,
-                created_at: data.created_at,
-                date: data.date,
+                created_at: formatDate(data.created_at),
+                date: formatDate(data.date),
                 user_name: data.userId.full_name,
                 user_email: data.userId.email,
                 user_mobile_number: data.userId.mobile_number,
                 user_id: data.userId._id,
-                puja: {
-                    temple_name: temple.temple_name,
-                    temple_id: temple._id,
-                    temple_image_url: temple.temple_image,
-                    puja_name: templePujaData.puja_name,
-                    duration: templePujaData.duration,
-                    price: templePujaData.price,
-                    date: templePujaData.date,
-                    temple_puja_id: data.TemplepujaId,
-                    master_puja_id: templePujaData.pujaId
-                }
-                /*,
-                templeData: templeData
-                .map(data => ({
-                    temple_name: data.templeId.temple_name,
-                    temple_id: data.templeId._id,
-                    temple_image_url: data.templeId.templeId,
-                    puja_name: data.puja_name,
-                    duration: data.duration,s
-                    price: data.price,
-                    date: data.date,
-                    temple_puja_id: data._id,
-                    master_puja_id: data.pujaId
-                })) || [] */
+                puja: puja ? {
+                    temple_name: puja.templeId.temple_name,
+                    temple_id: puja.templeId._id,
+                    temple_image_url: puja.templeId.temple_image,
+                    puja_name: puja.puja_name,
+                    duration: puja.duration,
+                    price: puja.price,
+                    date: formatDate(puja.date),
+                    temple_puja_id: puja._id,
+                    master_puja_id: puja.pujaId
+                } : null
             };
-        })) || [];
+        });
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booked_list', responseData, req.headers.lang);
 
     } catch (err) {
-        console.error("Error in bookedList:", err);
+        console.error("Error in templeBookedList:", err);
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
-}
+};
 
 
 
@@ -542,16 +531,10 @@ exports.userBookedList = async (req, res) => {
             .sort()
             .limit(parseInt(limit));
 
-        //console.log('temple_id, date:', temple_id, date);
-
         const templeData = await TemplePuja.find(templeQuery)
             .populate('templeId', "temple_name _id temple_image")
             .select('templeId puja_name duration price _id pujaId date');
 
-        //console.log('templeData:', templeData);
-
-        // Extract unique templeIds from booking
-        //const templeIds = bookings.map(book => new ObjectID(book.templeId));
         const templeIds = bookings.map(book => book.templeId);
 
         // Fetch temple info for the templeIds
@@ -585,19 +568,6 @@ exports.userBookedList = async (req, res) => {
                     temple_puja_id: data.TemplepujaId,
                     master_puja_id: templePujaData.pujaId
                 }
-                /*,
-                templeData: templeData
-                .map(data => ({
-                    temple_name: data.templeId.temple_name,
-                    temple_id: data.templeId._id,
-                    temple_image_url: data.templeId.templeId,
-                    puja_name: data.puja_name,
-                    duration: data.duration,
-                    price: data.price,
-                    date: data.date,
-                    temple_puja_id: data._id,
-                    master_puja_id: data.pujaId
-                })) || [] */
             };
         })) || [];
 
@@ -608,6 +578,8 @@ exports.userBookedList = async (req, res) => {
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 }
+
+
 
 exports.userBookingListOld = async (req, res) => {
 
@@ -983,12 +955,6 @@ exports.getSlotsWithBookedData = async (req, res) => {
                 start_time: data.start_time,
                 end_time: data.end_time,
                 date: data.date,
-                //temple_name: data.templeId.temple_name,
-                //temple_name: "",
-                //temple_id: data.templeId,
-                //puja_id: data.TemplepujaId.pujaId,
-                //temple_puja_id: data.TemplepujaId._id,
-                //duration: data.TemplepujaId.duration
             };
         })) || [];
 

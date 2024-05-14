@@ -24,6 +24,12 @@ exports.SearchAllTemples = async (req, res, next) => {
 
     try {
 
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        if (!user || ![constants.USER_TYPE.ADMIN, constants.USER_TYPE.USER].includes(users.user_type))
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
         const { sort, state, templename, location, district, is_verify } = req.query;
 
         let query = {};
@@ -126,7 +132,6 @@ exports.templeAccountVerify = async (req, res) => {
             district: templeData.district,
             contact_person_name: templeData.contact_person_name,
             contact_person_designation: templeData.contact_person_designation,
-
         } || {}
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.account_verify', responseData, req.headers.lang);
@@ -153,7 +158,7 @@ exports.templeDelete = async (req, res) => {
         if (user.user_type !== constants.USER_TYPE.ADMIN)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const templeData = await TempleGuru.findOneAndDelete({ _id: temple_id });
+        const templeData = await Temple.findOneAndDelete({ _id: temple_id });
 
         if (!templeData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.not_found', {}, req.headers.lang);

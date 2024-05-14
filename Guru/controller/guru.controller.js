@@ -422,9 +422,8 @@ exports.SearchAllGuru = async (req, res) => {
         const { sort, guruname, email, expertise, mobile_number, is_verify, state, location, limit } = req.query;
         const users = await User.findById(userId)
 
-        if (!users || (users.user_type !== constants.USER_TYPE.ADMIN && users.user_type !== constants.USER_TYPE.USER))
+        if (!users || ![constants.USER_TYPE.ADMIN, constants.USER_TYPE.USER].includes(users.user_type))
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.invalid_user', {}, req.headers.lang);
-
 
         const query = { user_type: 4 };
 
@@ -692,6 +691,56 @@ exports.guru_suggested_videos = async (req, res) => {
     }
 };
 
+
+exports.guru_suggested_videos_by_admin = async (req, res) => {
+
+    try {
+
+        const userId = req.user._id;
+        console.log(userId, "111") 
+        const user = await User.findById(userId);
+        const { limit , guruId } = req.query;
+    
+        if (!user || (user.user_type !== constants.USER_TYPE.ADMIN))
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.invalid_user', {}, req.headers.lang);
+
+        const response = await axios.get(
+            `${MUXURL}/video/v1/assets`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
+                }
+            }
+        );
+
+        const assetsId = response.data.data.map(asset => asset.id);
+
+        const videoData = await Video.find({ 'muxData.asset_id': { $in: assetsId }, guruId: guruId }).sort({ created_at: -1 }).limit(parseInt(limit));
+
+        const matchedData = response.data.data.filter(user => {
+            return videoData.some(muxData => muxData.muxData.asset_id === user.id);
+        });
+
+        const responseData = videoData.map(video => ({
+            plackback_id: video.muxData.playback_id,
+            asset_id: video.muxData.asset_id,
+            description: video.description,
+            title: video.title,
+            video_url: video.videoUrl,
+            id: video._id,
+            duration: minutesToSeconds(matchedData[0].duration),
+            created_at: video.created_at,
+            guru_id: video.guruId,
+        })) || []
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_all_the_suggested_videos', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.log("err(guru_suggested_videos_by_admin)....", err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+};
 
 
 exports.updateGuruProfile = async (req, res) => {

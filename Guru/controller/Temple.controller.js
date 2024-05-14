@@ -499,7 +499,7 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
             live_stream_id: response.data.data.id,
             playback_id: ids[0],
             created_at: response.data.data.created_at,
-            event_type:"pending",
+            event_type: "pending",
             templeId: templeId
         } || {}
 
@@ -514,8 +514,8 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
             live_stream_id: liveStreamingData.live_stream_id,
             created_at: liveStreamingData.created_at,
             templeId: liveStreamingData.templeId,
-            status:liveStreamingData.status,
-            event_type:liveStreamingData.event_type
+            status: liveStreamingData.status,
+            event_type: liveStreamingData.event_type
         } || {}
 
         return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'GURU.guru_live_stream_created', responseData, req.headers.lang);
@@ -532,7 +532,7 @@ exports.getTempleLiveStream = async (req, res) => {
 
     try {
 
-        const { limit } = req.query;
+        const { limit, temple_id } = req.query;
         const response = await axios.get(`${MUXURL}/video/v1/live-streams`, {
             headers: {
                 'Content-Type': 'application/json',
@@ -542,7 +542,7 @@ exports.getTempleLiveStream = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const liveStreamData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData } }).limit(parseInt(limit))
+        const liveStreamData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: temple_id }).limit(parseInt(limit))
             .populate('templeId', 'temple_name category temple_image background_image _id state district location mobile_number open_time closing_time created_at');
 
         if (!liveStreamData || liveStreamData.length == 0)
@@ -621,13 +621,67 @@ exports.temple_suggested_videos = async (req, res) => {
             id: video._id,
             duration: minutesToSeconds(matchedData[0].duration),
             created_at: video.created_at,
-            temple_id: video.guruId,
+            temple_id: video.templeId,
         })) || [];
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_all_the_suggested_videos', responseData, req.headers.lang);
 
     } catch (err) {
         console.log("err(temple_suggested_videos)....", err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+};
+
+exports.temple_suggested_videos_by_admin = async (req, res) => {
+
+    try {
+
+        const userId = req.user._id
+        const user = await User.findById(userId)
+        const { limit , templeId } = req.query;
+
+        if (user.user_type !== constants.USER_TYPE.ADMIN)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.invalid_user', {}, req.headers.lang);
+
+        const response = await axios.get(
+            `${MUXURL}/video/v1/assets`,
+            {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
+                }
+            }
+        );
+
+        const assetsId = response.data.data.map(asset => asset.id);
+        console.log("1111")
+        const videoData = await Video.find({ 'muxData.asset_id': { $in: assetsId }, templeId: templeId }).sort({ created_at: -1 }).limit(parseInt(limit));
+
+        console.log("222")
+        if (!videoData || videoData.length == 0)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.video_not_found', [], req.headers.lang);
+
+        const matchedData = response.data.data.filter(user => {
+            return videoData.some(muxData => muxData.muxData.asset_id === user.id);
+        });
+     
+        console.log("data..." , videoData)
+        const responseData = videoData.map(video => ({
+            plackback_id: video.muxData.playback_id,
+            asset_id: video.muxData.asset_id,
+            description: video.description,
+            title: video.title,
+            video_url: video.videoUrl,
+            id: video._id,
+            templeId:video.templeId,
+            duration: minutesToSeconds(matchedData[0].duration),
+            created_at: video.created_at,
+        })) || [];
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_all_the_suggested_videos', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.log("err(temple_suggested_videos_by_admin)....", err);
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 };
@@ -671,22 +725,13 @@ exports.AllBankList = async (req, res) => {
 
     try {
 
-        let query = {};
+        const userId = req.user._id
+        const user = await User.findOne({ _id: userId });
 
-        if (req.body.userId) {
-            query = { _id: req.body.userId, user_type: constants.USER_TYPE.ADMIN };
-        } else if (req.body.templeId) {
-            query = { _id: req.body.templeId, user_type: constants.USER_TYPE.TEMPLE };
-        } else {
-            return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'GENERAL.invalid_request_body', {}, req.headers.lang);
-        }
+        if (!user || (user.user_type !== constants.USER_TYPE.ADMIN))
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const userOrTemple = await (req.body.userId ? User : Temple).findOne(query);
-
-        if (!userOrTemple)
-            return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
-
-        const addBank = await Bank.find();
+        const addBank = await Bank.find().sort().limit(req.query.limit)
 
         if (!addBank || addBank.length == 0)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', [], req.headers.lang);
@@ -705,6 +750,36 @@ exports.AllBankList = async (req, res) => {
     }
 };
 
+
+exports.masterBankList = async (req, res) => {
+
+    try {
+
+        const templeId = req.temple._id
+        console.log("data", templeId);
+        const temple = await Temple.findOne({ _id: templeId });
+
+        if (!temple || (temple.user_type !== constants.USER_TYPE.TEMPLE))
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const addBank = await Bank.find().sort().limit(req.query.limit)
+
+        if (!addBank || addBank.length == 0)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', [], req.headers.lang);
+
+        const data = addBank.map(data => ({
+            bank_id: data._id,
+            bank_name: data.bank_name,
+            bank_logo: data.bank_logo
+        })) || [];
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.get_all_bank_details', data, req.headers.lang);
+
+    } catch (err) {
+        console.error('Error(masterBankList)....', err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+};
 
 
 exports.addBankDetails = async (req, res) => {
@@ -849,7 +924,7 @@ exports.deleteBankDetails = async (req, res) => {
 
         const banks = await TempleBankDetails.findOneAndDelete({ _id: bankId, templeId });
 
-        if (!bank)
+        if (!banks)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', {}, req.headers.lang);
 
         let data = {

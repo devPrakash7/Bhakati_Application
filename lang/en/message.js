@@ -145,7 +145,8 @@ module.exports = {
         temple_under_pujaList: 'temple under all the puja list',
         delete_rihuals: 'successfully delete the rihuals',
         delete_puja: 'successfully delete the puja',
-        update_puja: 'successfully update the puja'
+        update_puja: 'successfully update the puja',
+        puja_not_available:"this temple under puja not available"
 
     },
     'GURU': {

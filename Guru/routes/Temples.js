@@ -8,7 +8,9 @@ const { templeLogin, logout, getTempleProfile,
     addBankDetailsByAdmin,
     AllBankList, updateProfileImage,
     signUp,
-    uploadTempleImage , webHooks} = require('../controller/Temple.controller');
+    uploadTempleImage , webHooks,
+    masterBankList,
+    temple_suggested_videos_by_admin} = require('../controller/Temple.controller');
 const router = express.Router();
 const TempleAuth = require('../../middleware/temple.auth');
 const authenticate = require('../../middleware/authenticate')
@@ -21,7 +23,8 @@ const { signup_validator, ValidatorResult, temple_login_validator, get_profile_t
     update_bank_details_validator,
     add_pandit_validator,
     get_pandit_validator,
-    update_pandit_details_validator } = require('../../validation/temple.validator');
+    update_pandit_details_validator, 
+    get_all_live_streaming_validator} = require('../../validation/temple.validator');
 
 
 
@@ -32,7 +35,7 @@ router.post('/login', temple_login_validator, ValidatorResult, templeLogin);
 router.get('/logout', TempleAuth, logout);
 router.get('/getTempleProfile', TempleAuth, getTempleProfile);
 router.post('/createLiveStreamingByTemple', create_live_streaming_validator, ValidatorResult, TempleAuth, CreateNewLiveStreamByTemple);
-router.get('/getTempleLiveStream', getTempleLiveStream)
+router.get('/getTempleLiveStream', getTempleLiveStream);
 router.post('/addBankDetails', add_bank_validator, ValidatorResult, TempleAuth, addBankDetails)
 router.get('/getBankDetails/:bankId', get_bank_details_validator, ValidatorResult, TempleAuth, getBankDetails)
 router.put('/updateBankDetails/:bankId', update_bank_details_validator, ValidatorResult, TempleAuth, updateBankDetails);
@@ -47,7 +50,9 @@ router.get('/templeSuggestedVideos', TempleAuth, temple_suggested_videos);
 router.post('/getTempleProfileByAdmin', get_profile_temple_validator, ValidatorResult, authenticate, getTempleProfileByAdmin);
 router.put('/updateTempleProfile', update_temple_profile_validator, ValidatorResult, TempleAuth, updateTempleProfile)
 router.post('/addBankDetailsByAdmin', upload.single('logo'), authenticate, addBankDetailsByAdmin);
-router.get('/BankList', get_all_bank_list_validator, ValidatorResult, AllBankList);
+router.get('/BankList', authenticate , AllBankList);
+router.get('/masterBankList', TempleAuth , masterBankList);
+router.get("/templeSuggestVideosbyAdmin" , authenticate , temple_suggested_videos_by_admin)
 
 
 
