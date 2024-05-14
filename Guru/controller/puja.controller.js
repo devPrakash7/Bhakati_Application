@@ -33,7 +33,6 @@ exports.addNewPuja = async (req, res) => {
         let pujaImageUrls = `${BASEURL}/uploads/${file[0].filename}`
 
         reqBody.pujaImage = pujaImageUrls;
-
         reqBody.created_at = dateFormat.set_current_timestamp();
         reqBody.updated_at = dateFormat.set_current_timestamp();
 
@@ -118,7 +117,6 @@ exports.ListOfPuja = async (req, res) => {
         }
 
         const pujas = await Puja.find(filterCondition).select('puja_image puja_name description duration price status')
-            .populate('templeId', 'temple_name temple_image')
             .sort(sortOptions)
             .skip(skip)
             .limit(parseInt(limit));
