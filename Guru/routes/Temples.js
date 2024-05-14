@@ -48,7 +48,7 @@ router.post('/getTempleProfileByAdmin', get_profile_temple_validator, ValidatorR
 router.put('/updateTempleProfile', update_temple_profile_validator, ValidatorResult, TempleAuth, updateTempleProfile)
 router.post('/addBankDetailsByAdmin', upload.single('logo'), authenticate, addBankDetailsByAdmin);
 router.get('/BankList', get_all_bank_list_validator, ValidatorResult, AllBankList);
-router.post('/webhooks' , webHooks)
+
 
 
 

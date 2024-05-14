@@ -78,7 +78,7 @@ app.post("/webhooks" , async (req , res) => {
   try {
 
     const reqBody = req.body;
-    console.log("reqBody....", reqBody);
+    console.log("reqBody....", reqBody.object.id);
      await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
         {
             $set: {

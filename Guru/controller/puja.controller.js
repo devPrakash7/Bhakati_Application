@@ -198,20 +198,17 @@ exports.pujs_by_temple = async (req, res) => {
         if (!templeData || (templeData.user_type !== constants.USER_TYPE.TEMPLE))
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const pujsList = await TemplePuja.find({ templeId: templeId }).populate('pujaId').sort({ created_at: -1 }).limit(parseInt(limit));
+        const pujsList = await TemplePuja.find({ templeId: templeId }).sort({ created_at: -1 }).limit(parseInt(limit));
 
         const responseData = {
             temple_name: templeData.temple_name || null,
             temple_id: templeData._id || null,
             puja: pujsList.map(puja => ({
                 id: puja._id,
-                puja_id: puja.pujaId._id,
+                puja_id: puja.pujaId,
                 puja_name: puja.puja_name,
                 duration: puja.duration,
                 cost: puja.price,
-                description: puja.pujaId.description,
-                category: puja.pujaId.category,
-                puja_image_url: puja.pujaId.pujaImage,
                 created_at: puja.created_at
             })) || []
 
@@ -240,20 +237,17 @@ exports.temple_under_puja_list = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const templeData = await Temple.findById(temple_id);
-        const pujsList = await TemplePuja.find({ templeId: temple_id }).populate('pujaId').sort({ created_at: -1 }).limit(parseInt(limit));
+        const pujsList = await TemplePuja.find({ templeId: temple_id }).sort({ created_at: -1 }).limit(parseInt(limit));
 
         const responseData = {
             temple_name: templeData.temple_name || null,
             temple_id: templeData._id || null,
             puja: pujsList.map(puja => ({
                 id: puja._id,
-                puja_id: puja.pujaId._id,
+                puja_id: puja.pujaId,
                 puja_name: puja.puja_name,
                 duration: puja.duration,
                 cost: puja.price,
-                description: puja.pujaId.description,
-                category: puja.pujaId.category,
-                puja_image_url: puja.pujaId.pujaImage,
                 created_at: puja.created_at
             })) || []
 
