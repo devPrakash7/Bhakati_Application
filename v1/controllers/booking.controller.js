@@ -746,9 +746,7 @@ const convertTo24HourFormat = (time12h) => {
     }
     return `${hours}:${minutes}`;
 };
-const convertToLocalTime = (date) => {
-    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-}
+
 
 
 function convertTo24Hour(time12Hour) {
@@ -777,63 +775,18 @@ function convertTo12Hour(time) {
     return `${hour12}:${minute} ${period}`;
 }
 
-function generateTimeSlotsOld2(slotStartTim, newBookDuration, slotDuration, bookedSlots, bookingDate) {
-    const startTime = convertTo24Hour(slotStartTime);
-    const endTime = convertTo24Hour(slotEndTime);
-    const newBookDurationInMinutes = parseInt(newBookDuration, 10);
-    const slotDurationInMinutes = parseInt(slotDuration, 10);
-    
-    console.log(`start:${slotStartTime}, end:${slotEndTime}, duration:${newBookDurationInMinutes}`);
-
-    
-    const slotStart = new Date(bookingDate + ' ' + startTime);
-    const slotEnd = new Date(bookingDate + ' ' + endTime);
-    //const slotDuration = newBookDurationInMinutes * 60000; // convert duration to milliseconds
-     
-    console.log(`slotStart:${slotStart}, slotEnd:${slotEnd}`);
-
-
-    const slots = [];
-    
-    let currentSlot = slotStart;
-    
-    while (currentSlot < slotEnd) {
-        let isAvailable = true;
-        for (const bookedSlot of bookedSlots) {
-            //const bookedStart = new Date(`2024-05-12T${convertTo24Hour(bookedSlot.start_time)}:00`);
-            //const bookedEnd = new Date(`2024-05-12T${convertTo24Hour(bookedSlot.end_time)}:00`);
-            const bookedStart = new Date(bookingDate + ' ' + convertTo24Hour(bookedSlot.start_time));
-            const bookedEnd = new Date(bookingDate + ' ' + convertTo24Hour(bookedSlot.end_time));
-
-            console.log(`bookedStart:${bookedStart}, bookedEnd:${bookedEnd}`);
-
-            if (
-                (currentSlot >= bookedStart && currentSlot < bookedEnd) ||
-                (currentSlot < bookedStart && new Date(currentSlot.getTime() + slotDurationInMinutes * 60000) > bookedStart)
-            ) {
-                isAvailable = false;
-                break;
-            }
-        }
-        if (isAvailable) {
-            /*slots.push({
-                start_time: convertTo12Hour(currentSlot.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})),
-                end_time: convertTo12Hour(new Date(currentSlot.getTime() + newBookDurationInMinutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})),
-                available: true
-            });*/
-
-            slots.push({
-                start_time: currentSlot.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                end_time: new Date(currentSlot.getTime() + newBookDurationInMinutes * 60000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                available: true
-            });
-        }
-        currentSlot = new Date(currentSlot.getTime() + newBookDurationInMinutes * 60000);
-    }
-    
-    return slots;
+const convertToLocalTime = (date) => {
+    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
 }
 
+const addMinutes = (date, minutes) => {
+    console.log('===>> addMinutes to date:', date);
+    //return date.setMinutes(date.getMinutes() + minutes);
+    let newDate = new Date(date);
+    newDate.setMinutes(newDate.getMinutes() + minutes);
+    console.log('===>> newDate:', newDate);
+    return new Date(newDate);
+}
 
 function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDuration, bookedSlots, bookingDate) {
     const startTime = convertTo24Hour(slotStartTime);
@@ -849,7 +802,12 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
     
     const slotStart = new Date(bookingDate + ' ' + startTime);
     const slotEnd = new Date(bookingDate + ' ' + endTime); 
-     
+      
+    //const date = new Date(new Date().setMinutes(slotDurationInMinutes));
+    //const date = slotStart;     
+    //date.setMinutes(date.getMinutes() + slotDurationInMinutes);
+    //console.log(`-----------------------------date:${date}`);
+
     console.log(`slotStart:${slotStart}, slotEnd:${slotEnd}`);
 
 
@@ -859,7 +817,11 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
     
     while (currentSlotStart < slotEnd) {
         // Calculate current slot end time
-        let currentSlotEnd = new Date(currentSlotStart.getTime() + slotDurationInMinutes * 60000); 
+        //let currentSlotEnd = new Date(currentSlotStart.getTime() + slotDurationInMinutes * 60000); 
+        let currentSlotEnd = addMinutes(currentSlotStart, slotDurationInMinutes); 
+        //let currentSlotEnd = currentSlotStart.setMinutes(currentSlotStart.getMinutes() + slotDurationInMinutes); 
+        console.log('..........currentSlotStart:', currentSlotStart);
+        console.log('..........currentSlotEnd:', currentSlotEnd);
  
         /**
          * Check if current slot is booked
@@ -903,15 +865,13 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
             //console.log(`totalDuration:${totalDuration}, newBookDurationInMinutes:${newBookDurationInMinutes}, nextSlotStart:${convertToLocalTime(nextSlotStart)}, nextSlotStart < slotEnd:${nextSlotStart < slotEnd}`);
 
             // Loop until event duration is accommodated or until no more adjacent free slots are available
-            let count = 0;
-            let slotEndCaptured = false;
             while (totalDuration < newBookDurationInMinutes && nextSlotStart < slotEnd) {
-                count ++;
                 // Calculate end time of next slot
-                let nextSlotEnd = new Date(nextSlotStart.getTime() + slotDurationInMinutes * 60000);
-                if(count == 1) {
-                    currentSlotEnd = nextSlotEnd;
-                }
+                //let nextSlotEnd = new Date(nextSlotStart.getTime() + slotDurationInMinutes * 60000);
+                let nextSlotEnd = addMinutes(nextSlotStart, slotDurationInMinutes);
+                //console.log('nextSlotStart:', nextSlotStart); 
+                //console.log('count, nextSlotEnd:', count, convertToLocalTime(nextSlotEnd));
+                
                 
                 // Check if next slot is booked
                 const isNextSlotBooked = bookedSlots.some(slot => {
@@ -926,15 +886,13 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 // If next slot is not booked, include it in available slots
                 if (!isNextSlotBooked) {
                     //currentSlotEnd = nextSlotEnd;
-                    totalDuration += slotDurationInMinutes;
-                    if(!slotEndCaptured) {
-                        tempCurrentSlotEnd = nextSlotEnd;
-                        slotEndCaptured = true;
-                    }
-                    //console.log('...totalDuration:', totalDuration);
+                    tempCurrentSlotEnd = nextSlotEnd;               
+                    totalDuration += slotDurationInMinutes;    
                 } else {
                     break; // Break loop if next slot is booked
                 }
+                
+                //console.log('slotEndCaptured, tempCurrentSlotEnd:', slotEndCaptured, convertToLocalTime(tempCurrentSlotEnd));
                 
                 nextSlotStart = nextSlotEnd; // Move to start time of next next slot
             }
@@ -970,13 +928,10 @@ exports.getSlotsWithBookedData = async (req, res) => {
 
         if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
-
-        //const bookingDate = moment(reqBody.date, "DD/MM/YYYY").format("MM/DD/YYYY");
     
-        const bookingDate = moment(date, "DD/MM/YYYY").format("MM/DD/YYYY")
+        const bookingDate = moment(date, "DD/MM/YYYY").format("DD/MM/YYYY")
         console.log('bookingDate:', bookingDate);
 
-        //const bookings = await Booking.find({ templeId: templeId }).populate('templeId', 'start_time', 'end_time')
         const bookings = await Booking.find({ templeId: templeId, date: bookingDate }).populate('templeId')
             .sort()
             //.limit(parseInt(limit));
