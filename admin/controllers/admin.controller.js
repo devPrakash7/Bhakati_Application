@@ -188,15 +188,29 @@ exports.getUser = async (req, res) => {
 
         const user = await getUser(userId);
 
-        if (!user) {
+        if (!user) 
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'USER.user_details_not_found', {}, req.headers.lang);
-        }
-
-        if (user.user_type !== constants.USER_TYPE.ADMIN) {
+        
+        if (user.user_type !== constants.USER_TYPE.ADMIN) 
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.invalid_user', {}, req.headers.lang);
+    
+        const responseData =  {
+            full_name: user.full_name,
+            mobile_number: user.mobile_number,
+            dob: user.dob,
+            gender: user.gender,
+            user_type: user.user_type,
+            status: user.status,
+            isUpdated: user.isUpdated,
+            verify: user.verify,
+            signup_status: user.signup_status,
+            address: user.address,
+            deleted_at: user.deleted_at,
+            _id: user._id,
+            email: user.email,
+            created_at: user.created_at,
+            updated_at: user.updated_at
         }
-
-        const responseData = userResponse(user);
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'USER.profile_fetch_success', responseData, req.headers.lang);
 

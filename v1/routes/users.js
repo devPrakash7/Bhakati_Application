@@ -22,7 +22,7 @@ router.get('/getProfile', authenticate, getUser);
 router.put('/updateProfile/:userId', update_validator, ValidatorResult, updateProfile)
 router.post('/updateDeviceToken', device_token_validator, ValidatorResult, authenticate, updateDeviceToken);
 router.post('/generated_new_Tokens', new_token_validator, ValidatorResult, generate_refresh_tokens)
-router.post('/updateUserProfileImage', upload_profile_image_validator, ValidatorResult, upload.single('profile_image'), authenticate, updateProfileImage)
+router.post('/updateUserProfileImage', upload.single('profile_image'), authenticate, updateProfileImage)
 
 
 

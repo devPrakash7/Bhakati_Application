@@ -536,7 +536,7 @@ exports.userBookedList = async (req, res) => {
 
         // Fetch temple info for the templeIds
         const temples = await Temple.find({ _id: { $in: templeIds } });
-
+        
         const responseData = await Promise.all(bookings.map(async (data) => {
             return {
                 booking_id: data._id,
@@ -552,6 +552,7 @@ exports.userBookedList = async (req, res) => {
                 date: data.date,
                 user_id: data.userId._id,
             };
+
         })) || [];
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booked_list', responseData, req.headers.lang);

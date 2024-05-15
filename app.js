@@ -23,9 +23,8 @@ const ejs = require('ejs');
 const app = express();
 const bodyParser = require('body-parser')
 const fs = require("fs")
-const rithualRouter = require('./Guru/routes/rithual')
-const LiveStreaming = require('./models/live.streaming.model');
-const Video = require("./models/uploadVideo.model")
+const rithualRouter = require('./Guru/routes/rithual');
+const { updateLiveStreamingStatus, updateVideoStatus } = require("./middleware/webhooks.function")
 
 
 
@@ -58,54 +57,91 @@ app.use(cookieParser());
 const mongoose = require('./config/database');
 app.use('/uploads', express.static('uploads'));
 
-app.use(express.static(path.join(__dirname, 'public')));
-app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
-
+app.set('views', path.join(__dirname, 'views'));
 
 app.use(cors());
-// CORS configuration
-// const allowedOrigins = ['https://3.108.211.160', 'http://13.126.177.227', 'https://13.126.177.227' , 'http://localhost:8001']; // Add your allowed origins here
-
-// app.use(cors({
-//   origin: function (origin, callback) {
-//     if (!origin || allowedOrigins.includes(origin)) {
-//       callback(null, true);
-//     } else {
-//       callback(new Error('Not allowed by CORS'));
-//     }
-//   }
-// }));
-
 
 app.post("/webhooks", async (req, res) => {
-  
+
   try {
 
     const reqBody = req.body;
-    console.log("reqBody....", reqBody);
+    console.log("Received webhook request:", reqBody);
 
-   const videoData =  await Video.findOneAndUpdate({ asset_id: reqBody.object.id },
-      {
-        $set:
-        {
-          status: reqBody.data.status,
-          event_type: reqBody.type
-        }
-      },
-      { new: true }
-    )
-    const livestreaingData = await LiveStreaming.findOneAndUpdate({ live_stream_id: reqBody.object.id },
-      {
-        $set: {
-          status: reqBody.data.status,
-          event_type: reqBody.type,
-        }
-      }, { new: true })
+    const { id: livestreamingId } = reqBody.object;
+    const { type: eventType } = reqBody;
+
+    let status;
+
+    switch (eventType) {
+      case 'video.live_stream.created':
+        status = reqBody.data.status;
+        break;
+      case 'video.live_stream.connected':
+        status = reqBody.data.status;
+        break;
+      case 'video.live_stream.recording':
+        status = reqBody.data.status;
+        break;
+      case 'video.live_stream.active':
+        status = reqBody.data.status;
+        break;
+      case 'video.live_stream.disconnected':
+        status = reqBody.data.status;
+        break;
+      case 'video.live_stream.idle':
+        status = reqBody.data.status;
+        break;
+      default:
+        console.error("Unknown event type:", eventType);
+        return res.status(400).send({ error: 'Unknown event type' });
+    }
+
+    let liveStreamingData = await updateLiveStreamingStatus(livestreamingId, status, eventType)
+    res.status(200).send({ success: true, liveStreamingData});
 
   } catch (err) {
-    console.log("err(webhooks)", err.message)
+    console.error("Error processing webhook:", err.message);
+    res.status(500).send({ error: 'Internal Server Error' });
   }
+});
+
+
+app.post("/webhook", async (req, res) => {
+
+  try {
+    const reqBody = req.body;
+    console.log("Received webhook request:", reqBody);
+
+    const { id: assetId } = reqBody.object;
+    const { type: eventType } = reqBody;
+
+   let status;
+
+    switch (eventType) {
+      case 'video.asset.created':
+        status = reqBody.data.status;
+        break;
+      case 'video.asset.ready':
+        status = reqBody.data.status;
+        break;
+      case 'video.asset.errored':
+        status = reqBody.data.status;
+        break;
+      default:
+        console.error("Unknown event type:", eventType);
+        return res.status(400).send({ error: 'Unknown event type' });
+    }
+
+    let videoData = await updateVideoStatus(assetId, status, eventType)
+    res.status(200).send({ success: true, videoData });
+
+  } catch (err) {
+    console.error("Error processing webhook:", err.message);
+    res.status(500).send({ error: 'Internal Server Error' });
+  };
+
 })
 
 

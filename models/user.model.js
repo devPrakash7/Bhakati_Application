@@ -20,6 +20,10 @@ const userSchema = new Schema({
         type: String,
         default: null
     },
+    address: {
+        type: String,
+        default: null
+    },
     mobile_number: {
         type: String,
         default: null
@@ -32,12 +36,10 @@ const userSchema = new Schema({
         type: String,
         default: null
     },
-
     profileImg: {
         type: String,
         default: null
     },
-
     user_type: {
         type: Number,
         default: 2

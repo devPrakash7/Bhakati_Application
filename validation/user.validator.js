@@ -55,19 +55,19 @@ const validGender = ['male', 'female', 'other']
 
 exports.update_validator = [
 
+    param('userId')
+        .not()
+        .isEmpty()
+        .withMessage('userId is required')
+        .isString().withMessage('userId should be a string')
+        .isMongoId().withMessage('please enter a valid userId ')
+        .trim(),
+
     body('full_name')
         .not()
         .isEmpty()
         .withMessage('full_name is required')
         .isString().withMessage('full_name should be a string')
-        .trim(),
-
-    body('email')
-        .not()
-        .isEmpty()
-        .withMessage('email is required')
-        .isString().withMessage('email should be a string')
-        .isEmail().withMessage('please enter a valid email')
         .trim(),
 
     body('gender')
@@ -76,6 +76,7 @@ exports.update_validator = [
         .withMessage('gender is required')
         .isString().withMessage('gender should be a string')
         .isIn(validGender).withMessage('please enter a valid gender')
+        .isLowercase().withMessage('gender should be lowercase')
         .trim(),
 
     body('dob')
@@ -83,6 +84,23 @@ exports.update_validator = [
         .isEmpty()
         .withMessage('dob is required')
         .isString().withMessage('dob should be a string')
+        .trim(),
+
+
+    body('mobile_number')
+        .not()
+        .isEmpty()
+        .withMessage('mobile_number is required')
+        .isString().withMessage('mobile_number should be a string')
+        .isMobilePhone().withMessage('please enter a valid mobile_number')
+        .isLength({ min: 10, max: 12 })
+        .trim(),
+
+    body('address')
+        .not()
+        .isEmpty()
+        .withMessage('address is required')
+        .isString().withMessage('address should be a string')
         .trim(),
 ]
 
@@ -101,8 +119,8 @@ exports.verify_otp_validator = [
         .not()
         .isEmpty()
         .withMessage('otp is required')
-        .isString().withMessage('password should be a string')
-        .isLength({ min: 6, max: 6 }).withMessage('password length must be 8 characters')
+        .isString().withMessage('otp should be a string')
+        .isLength({ min: 6, max: 6 }).withMessage('otp length must be 6 characters')
         .trim()
 ];
 

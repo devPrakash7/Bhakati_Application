@@ -58,6 +58,8 @@ exports.signUp = async (req, res) => {
             mobile_number: templeData.mobile_number,
             email: templeData.email,
             user_type: templeData.user_type,
+            description: templeData.description,
+            country: templeData.country,
             location: templeData.location,
             state: templeData.state,
             district: templeData.district,
@@ -98,6 +100,7 @@ exports.uploadTempleImage = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'Image file or background image file is required', {}, req.headers.lang);
 
         const temple_image_url = `${BASEURL}/uploads/${req.files['profile_image'][0].filename}`;
+        console.log("temple_image...." , temple_image_url)
         temple.temple_image = temple_image_url;
         const background_image_url = `${BASEURL}/uploads/${req.files['background_image'][0].filename}`;
         temple.background_image = background_image_url;
@@ -114,6 +117,8 @@ exports.uploadTempleImage = async (req, res) => {
             state: temple.state,
             district: temple.district,
             category: temple.category,
+            description: temple.description,
+            country: temple.country,
             opening_time: temple.opening_time,
             closing_time: temple.closing_time,
             feature_image_url: temple.background_image,
@@ -178,6 +183,8 @@ exports.templeLogin = async (req, res) => {
             state: temple.state,
             district: temple.district,
             category: temple.category,
+            description: temple.description,
+            country: temple.country,
             opening_time: temple.opening_time,
             closing_time: temple.closing_time,
             contact_person_name: temple.contact_person_name,
@@ -260,6 +267,8 @@ exports.getTempleProfile = async (req, res) => {
                 user_type: templeData.user_type,
                 location: templeData.location,
                 category: templeData.category,
+                description: temple.description,
+                country: temple.country,
                 opening_time: templeData.opening_time,
                 closing_time: templeData.closing_time,
                 darsan: templeData.darsan,
@@ -345,6 +354,8 @@ exports.getTempleProfileByAdmin = async (req, res) => {
                 user_type: templeData.user_type,
                 location: templeData.location,
                 category: templeData.category,
+                description: templeData.description,
+                country: templeData.country,
                 opening_time: templeData.opening_time,
                 closing_time: templeData.closing_time,
                 darsan: templeData.darsan,
@@ -412,8 +423,10 @@ exports.updateTempleProfile = async (req, res) => {
             contact_person_name = reqBody.contact_person_name,
             contact_person_designation = reqBody.contact_person_designation,
             opening_time = reqBody.opening_time
-        closing_time = reqBody.closing_time
-        category = reqBody.category
+            closing_time = reqBody.closing_time
+            category = reqBody.category
+            description = reqBody.description
+            country = reqBody.country
 
         const templeData = await Temple.findOneAndUpdate({ _id: templeId }, reqBody, { new: true })
 
@@ -431,6 +444,8 @@ exports.updateTempleProfile = async (req, res) => {
             state: templeData.state,
             district: templeData.district,
             category: templeData.category,
+            description: templeData.description,
+            country: templeData.country,
             contact_person_name: templeData.contact_person_name,
             contact_person_designation: templeData.contact_person_designation,
             opening_time: templeData.opening_time,
@@ -638,7 +653,7 @@ exports.temple_suggested_videos_by_admin = async (req, res) => {
 
         const userId = req.user._id
         const user = await User.findById(userId)
-        const { limit , templeId } = req.query;
+        const { limit, templeId } = req.query;
 
         if (user.user_type !== constants.USER_TYPE.ADMIN)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.invalid_user', {}, req.headers.lang);
@@ -664,8 +679,8 @@ exports.temple_suggested_videos_by_admin = async (req, res) => {
         const matchedData = response.data.data.filter(user => {
             return videoData.some(muxData => muxData.muxData.asset_id === user.id);
         });
-     
-        console.log("data..." , videoData)
+
+        console.log("data...", videoData)
         const responseData = videoData.map(video => ({
             plackback_id: video.muxData.playback_id,
             asset_id: video.muxData.asset_id,
@@ -673,7 +688,7 @@ exports.temple_suggested_videos_by_admin = async (req, res) => {
             title: video.title,
             video_url: video.videoUrl,
             id: video._id,
-            templeId:video.templeId,
+            templeId: video.templeId,
             duration: minutesToSeconds(matchedData[0].duration),
             created_at: video.created_at,
         })) || [];
