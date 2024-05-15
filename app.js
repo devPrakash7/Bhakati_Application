@@ -55,10 +55,10 @@ app.use(cookieParser());
 
 //Database connection with mongodb
 const mongoose = require('./config/database');
-app.use('/uploads', express.static('uploads'));
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.use('/uploads',express.static(path.join(__dirname,'uploads')))
 
 app.use(cors());
 
@@ -106,6 +106,7 @@ app.post("/webhooks", async (req, res) => {
     res.status(500).send({ error: 'Internal Server Error' });
   }
 });
+
 
 
 app.post("/webhook", async (req, res) => {

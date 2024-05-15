@@ -3,29 +3,17 @@ const multer = require('multer');
 const sanitizeAndRenameFilename = (filename) => {
   const extension = filename.split('.').pop();
   const nameWithoutExtension = filename.slice(0, -(extension.length + 1));
-
-  const sanitizedFilename = nameWithoutExtension.replace(/\s+/g, '_')
-                                                .replace(/[^a-zA-Z0-9]/g, '')
+  const sanitizedFilename = nameWithoutExtension.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9]/g, '');
   const timestamp = Date.now();
   return `${sanitizedFilename}_${timestamp}.${extension}`;
 };
+
 
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/'); 
   },
   filename: function (req, file, cb) {
-      /*let fileName = file.originalname;
-      fileName = fileName.replace(/ /g,"_");
-      fileName = fileName.replace("(","").replace(")","");
-      fileName = Date.now() + '_'+ fileName;
-      */
-
-      const ext = path.extname(file.originalname).toLowerCase();
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9); 
-      let fileName = file.fieldname + '-' + uniqueSuffix + ext;
-      console.log('newFileName:', fileName);
-      cb(null, fileName)
     const sanitizedAndRenamedFilename = sanitizeAndRenameFilename(file.originalname);
     cb(null, sanitizedAndRenamedFilename);
   }

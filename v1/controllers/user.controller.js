@@ -230,6 +230,7 @@ exports.getUser = async (req, res) => {
             gender: user.gender,
             user_type: user.user_type,
             status: user.status,
+            profile_image_url: user.profileImg,
             isUpdated: user.isUpdated,
             verify: user.verify,
             signup_status: user.signup_status,
