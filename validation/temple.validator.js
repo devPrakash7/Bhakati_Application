@@ -261,7 +261,18 @@ exports.create_live_streaming_validator = [
         .withMessage('description is required')
         .isString().withMessage('description should be a string')
         .trim(),
-];
+]
+
+exports.get_all_live_streaming_validator = [
+
+    body('temple_id')
+        .not()
+        .isEmpty()
+        .withMessage('temple_id is required')
+        .isString().withMessage('temple_id should be a string')
+        .isMongoId().withMessage('olease enter a valid temple id')
+        .trim(),
+]
 
 exports.create_bank_by_admin_validator = [
 

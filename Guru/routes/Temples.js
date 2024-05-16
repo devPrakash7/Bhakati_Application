@@ -35,7 +35,7 @@ router.post('/login', temple_login_validator, ValidatorResult, templeLogin);
 router.get('/logout', TempleAuth, logout);
 router.get('/getTempleProfile', TempleAuth, getTempleProfile);
 router.post('/createLiveStreamingByTemple', create_live_streaming_validator, ValidatorResult, TempleAuth, CreateNewLiveStreamByTemple);
-router.get('/getTempleLiveStream', getTempleLiveStream);
+router.get('/getTempleLiveStream', get_all_live_streaming_validator , ValidatorResult, getTempleLiveStream);
 router.post('/addBankDetails', add_bank_validator, ValidatorResult, TempleAuth, addBankDetails)
 router.get('/getBankDetails/:bankId', get_bank_details_validator, ValidatorResult, TempleAuth, getBankDetails)
 router.put('/updateBankDetails/:bankId', update_bank_details_validator, ValidatorResult, TempleAuth, updateBankDetails);

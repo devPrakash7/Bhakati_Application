@@ -548,6 +548,7 @@ exports.getTempleLiveStream = async (req, res) => {
     try {
 
         const { limit, temple_id } = req.query;
+        console.log("data..." , req.query)
         const response = await axios.get(`${MUXURL}/video/v1/live-streams`, {
             headers: {
                 'Content-Type': 'application/json',
