@@ -1,14 +1,12 @@
 const axios = require('axios');
-const LiveStream = require('../../models/liveStreaming.model');
 const dateFormat = require('../../helper/dateformat.helper');
 const { sendResponse } = require("../../services/common.service");
 const { WEB_STATUS_CODE, STATUS_CODE } = require('../../config/constants');
 const { MUX_TOKEN_ID, MUX_TOKEN_SECRET, MUXURL } = require('../../keys/development.keys');
-const { LiveStreamingResponse } = require('../../ResponseData/LiveStream.reponse');
-const Puja = require('../../models/puja.model');
-const Rithuls = require('../../models/Rituals.model')
-const constants = require('../../config/constants')
-
+const LiveStreaming = require("../../models/live.streaming.model")
+const User = require('../../models/user.model')
+const constants = require("../../config/constants");
+const TemplePuja = require("../../models/temple.puja.model")
 
 
 
@@ -17,19 +15,27 @@ exports.createNewLiveStream = async (req, res) => {
 
     try {
 
-        const { pujaId, templeId, description, title } = req.body;
+        const { temple_puja_id, temple_id, description, title } = req.body;
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        if (!user || user.user_type !== constants.USER_TYPE.USER)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const requestData = {
-            "playback_policy": ["public"],
-            "new_asset_settings": {
-                "playback_policy": "public",
-                "max_resolution_tier": "1080p",
-                "generated_subtitles": [{
-                    "name": "Auto-generated Subtitles",
-                    "language_code": "en"
-                }]
+            playback_policy: ["public"],
+            new_asset_settings: {
+                playback_policy: "public",
+                max_resolution_tier: "1080p",
+                generated_subtitles: [
+                    {
+                        name: "Auto-generated Subtitles",
+                        language_code: "en"
+                    }
+                ]
             }
         };
+
 
         const response = await axios.post(
             `${MUXURL}/video/v1/live-streams`,
@@ -42,34 +48,43 @@ exports.createNewLiveStream = async (req, res) => {
             }
         );
 
-        const { data } = response.data;
-        const ids = data.playback_ids.map(item => item.id);
+        const playbackIds = response.data.data.playback_ids.map(item => item.id);
 
-        const newLiveStream = {
-            pujaId,
-            templeId,
-            status: 'LIVE',
-            startTime: dateFormat.add_current_time(),
-            created_at: dateFormat.set_current_timestamp(),
-            updated_at: dateFormat.set_current_timestamp(),
+        const liveStreamData = {
             description,
             title,
-            muxData: {
-                playBackId: ids[0],
-                stream_key: data.stream_key,
-                status: data.status,
-                reconnect_window: data.reconnect_window,
-                max_continuous_duration: data.max_continuous_duration,
-                latency_mode: data.latency_mode,
-                LiveStreamingId: data.id,
-                created_at: data.created_at,
-            },
+            stream_key: response.data.data.stream_key,
+            status: response.data.data.status,
+            reconnect_window: response.data.data.reconnect_window,
+            max_continuous_duration: response.data.data.max_continuous_duration,
+            latency_mode: response.data.data.latency_mode,
+            live_stream_id: response.data.data.id,
+            playback_id: playbackIds[0],
+            created_at: response.data.data.created_at,
+            templeId: temple_id,
+            temple_puja_id: temple_puja_id,
+            userId: userId
         };
 
-        const addedLiveStream = await LiveStream.create(newLiveStream);
-        const responseData = LiveStreamingResponse(addedLiveStream);
+        const liveStreamingData = await LiveStreaming.create(liveStreamData);
+
+        const responseData = {
+            id: liveStreamingData._id,
+            description: liveStreamingData.description,
+            title: liveStreamingData.title,
+            stream_key: liveStreamingData.stream_key,
+            playback_id: liveStreamingData.playback_id,
+            live_stream_id: liveStreamingData.live_stream_id,
+            created_at: liveStreamingData.created_at,
+            temple_id: liveStreamingData.templeId,
+            status: liveStreamingData.status,
+            temple_puja_id: liveStreamData.temple_puja_id,
+            user_id: liveStreamData.userId,
+            event_type: liveStreamingData.event_type
+        };
 
         return sendResponse(res, WEB_STATUS_CODE.CREATED, STATUS_CODE.SUCCESS, 'LIVESTREAM.create_new_live_stream_video', responseData, req.headers.lang);
+
     } catch (err) {
         console.error("Error in createNewLiveStream:", err);
         return sendResponse(res, WEB_STATUS_CODE.SERVER_ERROR, STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
@@ -78,151 +93,54 @@ exports.createNewLiveStream = async (req, res) => {
 
 
 
-
-
 exports.getAllLiveStreamByPuja = async (req, res) => {
 
-    const { limit = 25, page = 1 } = req.query;
-
     try {
-        // Fetch live streams from MUX API
-        const response = await axios.get(
-            `${MUXURL}/video/v1/live-streams`,
-            {
-                params: {
-                    limit,
-                    offset: (page - 1) * limit
-                },
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
-                }
+
+        const { limit } = req.query;
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        if (!user || user.user_type !== constants.USER_TYPE.USER)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const response = await axios.get(`${MUXURL}/video/v1/live-streams`, {
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
             }
-        );
+        });
 
-        // Check if live streams are not found
-        if (!response.data || response.data.length === 0) {
-            return sendResponse(res, WEB_STATUS_CODE.OK, STATUS_CODE.SUCCESS, 'LIVESTREAM.not_found_streams', [], req.headers.lang);
-        }
+        const LiveStreamingData = response.data.data.map(stream => stream.id);
 
+        const liveStreamData = await LiveStreaming.find({
+            live_stream_id: { $in: LiveStreamingData }, userId: userId, status: 'active'
+        }).limit(parseInt(limit));
 
-        const query = {};
-        query.pujaId = { $ne: null };
+        if (!liveStreamData || liveStreamData.length === 0)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.Live_stream_not_found', [], req.headers.lang);
 
-        // Fetch live streams data from database
-        const LiveStreamsData = await LiveStream.find(query)
-            .select('_id status startTime muxData.stream_key muxData.LiveStreamingId muxData.playBackId title description')
-            .populate('templeId', 'TempleName TempleImg Location State District Desc Temple_Open_time Closing_time _id templeId user_type')
-            .populate('pujaId', 'pujaName pujaImage _id')
-            .sort({ startTime: -1 }) // Sort by startTime in descending order
-            .limit(parseInt(limit))
-            .skip((page - 1) * limit);
+        // Format the response data
+        const responseData = await Promise.all(liveStreamData.map(async livestream => {
+            return {
+                playback_id: livestream.playback_id,
+                live_stream_id: livestream.live_stream_id,
+                stream_key: livestream.stream_key,
+                title: livestream.title,
+                status: livestream.status,
+                published_date: new Date(),
+                views: '',
+            };
+        }));
 
-        // Check if live streams data is not found
-        if (!LiveStreamsData || LiveStreamsData.length === 0) {
-            return sendResponse(res, WEB_STATUS_CODE.OK, STATUS_CODE.SUCCESS, 'LIVESTREAM.not_found', [], req.headers.lang);
-        }
+        const filteredResponseData = responseData.filter(item => item !== null);
 
-        const LiveStreamingData =  LiveStreamsData.map(stream => stream.muxData.LiveStreamingId);
-        const streamingData = [];
-        for (const item of response.data.data) {
-          if (LiveStreamingData.includes(item.id)) {
-            streamingData.push(item);
-          }
-        }
-
-        // Combine MUX data and live streams data
-        const allLivestreams = {
-            LiveStreamsData,
-            streamingData
-        };
-
-
-        // Send response
-        return sendResponse(res, WEB_STATUS_CODE.OK, STATUS_CODE.SUCCESS, 'LIVESTREAM.get_all_live_streams_by_puja', allLivestreams, req.headers.lang);
-    } catch (err) {
-        console.error("Error in getAllLiveStreamByPuja:", err);
-        return sendResponse(res, WEB_STATUS_CODE.SERVER_ERROR, STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
-    }
-};
-
-
-
-
-exports.deleteLiveStream = async (req, res) => {
-    const { LIVE_STREAM_ID, id } = req.params;
-
-    try {
-        // Delete live stream from MUX API
-        const response = await axios.delete(
-            `${MUXURL}/video/v1/live-streams/${LIVE_STREAM_ID}`,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
-                }
-            }
-        );
-
-        // Check if live stream is not found
-        if (!response.data) {
-            return sendResponse(res, constants.WEB_STATUS_CODE.NOT_FOUND, constants.STATUS_CODE.FAIL, 'LIVESTREAM.not_found_streams', {}, req.headers.lang);
-        }
-
-        // Delete live stream from database
-        const livestream = await LiveStream.findOneAndDelete({ _id: id });
-
-        // Check if live stream is not found
-        if (!livestream) {
-            return sendResponse(res, constants.WEB_STATUS_CODE.NOT_FOUND, constants.STATUS_CODE.FAIL, 'LIVESTREAM.not_found', {}, req.headers.lang);
-        }
-
-        // Send success response
-        const livestreams = LiveStreamingResponse(livestream);
-        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'LIVESTREAM.delete_live_streams', livestreams, req.headers.lang);
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_Live_Stream_By_Guru', filteredResponseData, req.headers.lang);
 
     } catch (err) {
-        console.error("Error in deleteLiveStream:", err);
+        console.error("Error in getTempleLiveStream:", err);
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 };
 
 
-
-
-exports.LiveStreamingEnd = async (req, res) => {
-
-    const { LIVE_STREAM_ID, id } = req.params;
-    const reqBody = req.body;
-
-    try {
-        // Complete live stream in MUX API
-        const response = await axios.put(
-            `${MUXURL}/video/v1/live-streams/${LIVE_STREAM_ID}/complete`,
-            reqBody,
-            {
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
-                }
-            }
-        );
-
-
-        // Update live stream status in database
-        const endLiveStream = await LiveStream.findOneAndUpdate(
-            { _id: id },
-            { $set: { status: 'END', endTime: dateFormat.add_current_time(), updated_at: dateFormat.set_current_timestamp() } },
-            { new: true }
-        );
-
-        // Send success response
-        const endLiveStreams = LiveStreamingResponse(endLiveStream);
-        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'LIVESTREAM.update_live_streams', endLiveStreams, req.headers.lang);
-
-    } catch (err) {
-        console.error("Error in LiveStreamingEnd:", err);
-        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
-    }
-};
 

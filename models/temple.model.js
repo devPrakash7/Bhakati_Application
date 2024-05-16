@@ -58,10 +58,12 @@ const templeSchema = new mongoose.Schema({
         default: null
     },
     description: {
-        type: String
+        type: String,
+        default:null
     },
     country: {
         type: String,
+        default:null
     },
     location: {
         type: String,

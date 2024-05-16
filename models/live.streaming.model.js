@@ -15,6 +15,15 @@ const LiveStreamSchema = new mongoose.Schema({
         ref: 'temple',
         default: null
     },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users',
+        default: null
+    },
+    temple_puja_id: {
+        type: mongoose.Schema.Types.ObjectId, ref: 'templepujas', 
+        default: null
+    },
     title: {
         type: String,
         default: null

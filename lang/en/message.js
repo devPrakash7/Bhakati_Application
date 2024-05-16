@@ -127,7 +127,7 @@ module.exports = {
 
     'LIVESTREAM': {
 
-        create_new_live_stream_video: 'successfully created a new live streaming video',
+        create_new_live_stream_video: 'successfully created a new live streaming',
         get_all_live_streams_by_puja: 'successfully get all live streams by puja',
         get_all_live_streams_by_rithuals: 'successfully get all live streams by rithuals',
         delete_live_streams: 'successfully delete live streaming',

@@ -58,7 +58,7 @@ const mongoose = require('./config/database');
 
 const uploadDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
+  fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 app.set('view engine', 'ejs');
@@ -67,49 +67,51 @@ app.use('/uploads', express.static(uploadDir));
 
 app.use(cors());
 
+
 app.post("/webhooks", async (req, res) => {
-
   try {
-
     const reqBody = req.body;
-    console.log("Received webhook request:", reqBody);
+    console.log("Received webhook request ...", reqBody);
 
-    const { id: livestreamingId } = reqBody.object;
-    const { type: eventType } = reqBody;
+    const { id: livestreamingId } = reqBody.object || {};
+    console.log("status...", reqBody.data.status)
+    const eventType = reqBody.type;
+    console.log("event...", eventType)
+
+    if (!livestreamingId || !eventType)
+      return res.status(400).send({ error: 'Invalid webhook payload' });
 
     let status;
-
     switch (eventType) {
       case 'video.live_stream.created':
-        status = reqBody.data.status;
+        status = "created";
         break;
       case 'video.live_stream.connected':
-        status = reqBody.data.status;
-        break;
-      case 'video.live_stream.recording':
-        status = reqBody.data.status;
+        status = "connected";
         break;
       case 'video.live_stream.active':
-        status = reqBody.data.status;
+        status = "active";
         break;
       case 'video.live_stream.disconnected':
-        status = reqBody.data.status;
+        status = "disconnected";
         break;
       case 'video.live_stream.idle':
-        status = reqBody.data.status;
+        status = "idle";
         break;
       default:
-        console.error("Unknown event type:", eventType);
         return res.status(400).send({ error: 'Unknown event type' });
     }
 
-    let liveStreamingData = await updateLiveStreamingStatus(livestreamingId, status, eventType)
-    res.status(200).send({ success: true, liveStreamingData});
+    console.log("data..", status)
+
+    const liveStreamingData = await updateLiveStreamingStatus(livestreamingId, status, eventType);
+    return res.status(200).send({ success: true, liveStreamingData });
 
   } catch (err) {
-    console.error("Error processing webhook:", err.message);
-    res.status(500).send({ error: 'Internal Server Error' });
+    console.error("Error processing webhook:", err);
+    return res.status(500).send({ error: 'Internal Server Error' });
   }
+
 });
 
 
@@ -117,39 +119,41 @@ app.post("/webhooks", async (req, res) => {
 app.post("/webhook", async (req, res) => {
 
   try {
+
     const reqBody = req.body;
-    console.log("Received webhook request:", reqBody);
+    console.log("Received webhook request ...", reqBody);
 
-    const { id: assetId } = reqBody.object;
-    const { type: eventType } = reqBody;
+    const { id: assetId } = reqBody.object || {};
+    console.log("status...", reqBody.data.status)
+    const eventType = reqBody.type;
+    console.log("event...", eventType)
 
-   let status;
+    if (!assetId || !eventType)
+      return res.status(400).send({ error: 'Invalid webhook payload' });
 
+    let status;
     switch (eventType) {
       case 'video.asset.created':
-        status = reqBody.data.status;
+        status = "created";
         break;
       case 'video.asset.ready':
-        status = reqBody.data.status;
+        status = "ready";
         break;
       case 'video.asset.errored':
-        status = reqBody.data.status;
+        status = "error";
         break;
       default:
-        console.error("Unknown event type:", eventType);
         return res.status(400).send({ error: 'Unknown event type' });
     }
-
-    let videoData = await updateVideoStatus(assetId, status, eventType)
-    res.status(200).send({ success: true, videoData });
+    console.log("data..", status)
+    const liveStreamingData = await updateLiveStreamingStatus(assetId, status, eventType);
+    return res.status(200).send({ success: true, liveStreamingData });
 
   } catch (err) {
-    console.error("Error processing webhook:", err.message);
-    res.status(500).send({ error: 'Internal Server Error' });
-  };
-
-})
-
+    console.error("Error processing webhook:", err);
+    return res.status(500).send({ error: 'Internal Server Error' });
+  }
+});
 
 app.use('/v1/', indexRouter);
 app.use('/v1/users', usersRouter);

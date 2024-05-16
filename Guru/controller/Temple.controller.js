@@ -100,7 +100,7 @@ exports.uploadTempleImage = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'Image file or background image file is required', {}, req.headers.lang);
 
         const temple_image_url = `${BASEURL}/uploads/${req.files['profile_image'][0].filename}`;
-        console.log("temple_image...." , temple_image_url)
+        console.log("temple_image....", temple_image_url)
         temple.temple_image = temple_image_url;
         const background_image_url = `${BASEURL}/uploads/${req.files['background_image'][0].filename}`;
         temple.background_image = background_image_url;
@@ -267,8 +267,8 @@ exports.getTempleProfile = async (req, res) => {
                 user_type: templeData.user_type,
                 location: templeData.location,
                 category: templeData.category,
-                description: temple.description,
-                country: temple.country,
+                description: templeData.description,
+                country: templeData.country,
                 opening_time: templeData.opening_time,
                 closing_time: templeData.closing_time,
                 darsan: templeData.darsan,
@@ -423,10 +423,10 @@ exports.updateTempleProfile = async (req, res) => {
             contact_person_name = reqBody.contact_person_name,
             contact_person_designation = reqBody.contact_person_designation,
             opening_time = reqBody.opening_time
-            closing_time = reqBody.closing_time
-            category = reqBody.category
-            description = reqBody.description
-            country = reqBody.country
+        closing_time = reqBody.closing_time
+        category = reqBody.category
+        description = reqBody.description
+        country = reqBody.country
 
         const templeData = await Temple.findOneAndUpdate({ _id: templeId }, reqBody, { new: true })
 
@@ -514,7 +514,6 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
             live_stream_id: response.data.data.id,
             playback_id: ids[0],
             created_at: response.data.data.created_at,
-            event_type: "pending",
             templeId: templeId
         } || {}
 
@@ -528,7 +527,7 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
             plackback_id: liveStreamingData.plackback_id,
             live_stream_id: liveStreamingData.live_stream_id,
             created_at: liveStreamingData.created_at,
-            templeId: liveStreamingData.templeId,
+            temple_id: liveStreamingData.templeId,
             status: liveStreamingData.status,
             event_type: liveStreamingData.event_type
         } || {}
@@ -542,13 +541,12 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
 }
 
 
-
 exports.getTempleLiveStream = async (req, res) => {
 
     try {
+        const { limit } = req.query;
 
-        const { limit, temple_id } = req.query;
-        console.log("data..." , req.query)
+        // Fetch live streams from MUX
         const response = await axios.get(`${MUXURL}/video/v1/live-streams`, {
             headers: {
                 'Content-Type': 'application/json',
@@ -558,16 +556,22 @@ exports.getTempleLiveStream = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const liveStreamData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: temple_id }).limit(parseInt(limit))
-            .populate('templeId', 'temple_name category temple_image background_image _id state district location mobile_number open_time closing_time created_at');
+        const allTempleData = await Temple.find();
+        const allTempleId = allTempleData.map(temple => temple._id);
 
-        if (!liveStreamData || liveStreamData.length == 0)
+        const liveStreamData = await LiveStreaming.find({
+            live_stream_id: { $in: LiveStreamingData },
+            templeId: { $in: allTempleId }, status: 'active'
+        }).limit(parseInt(limit));
+
+        if (!liveStreamData || liveStreamData.length === 0)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.Live_stream_not_found', [], req.headers.lang);
 
-
+        // Format the response data
         const responseData = await Promise.all(liveStreamData.map(async livestream => {
             const templeDetails = await Temple.findOne({ _id: livestream.templeId });
             if (!templeDetails) return null;
+
             return {
                 playback_id: livestream.playback_id,
                 live_stream_id: livestream.live_stream_id,
@@ -587,13 +591,15 @@ exports.getTempleLiveStream = async (req, res) => {
         }));
 
         const filteredResponseData = responseData.filter(item => item !== null);
+
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_Live_Stream_By_Guru', filteredResponseData, req.headers.lang);
 
     } catch (err) {
-        console.log("err(getTempleLiveStream):", err);
+        console.error("Error in getTempleLiveStream:", err);
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 };
+
 
 
 

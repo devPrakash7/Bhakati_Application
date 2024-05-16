@@ -580,6 +580,7 @@ exports.GuruCreateNewLiveStream = async (req, res) => {
             description: guruData.description,
             plackback_id: guruData.plackback_id,
             live_stream_id: guruData.live_stream_id,
+            guru_id:guruData.guruId,
             created_at: guruData.created_at,
         }
 
@@ -606,17 +607,16 @@ exports.getLiveStreamByGuru = async (req, res) => {
             }
         });
 
+        const allGuruData = await Guru.find();
+        const allGuruId = allGuruData.map(guru => guru._id);
+      
         const LiveStreamingData = response.data.data.map(stream => stream.id);
-
         const GuruData = await LiveStreaming.find({
-            live_stream_id: { $in: LiveStreamingData },
-            guruId: { $ne: null } // Adding logic for guruId not equal to null
-        }).limit(limit).populate('guruId', '_id guru_name email mobile_number expertise');
+            live_stream_id: { $in: LiveStreamingData }, guruId: { $in: allGuruId }
+        }).limit(limit)
 
         if (!GuruData || GuruData.length == 0)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.live_stream_data_not_found', [], req.headers.lang);
-
-        console.log("data", GuruData);
 
         const responseData = await Promise.all(GuruData.map(async guru => {
             const guruDetails = await Guru.findById(guru.guruId);
@@ -631,7 +631,6 @@ exports.getLiveStreamByGuru = async (req, res) => {
                 views: ''
             };
         })) || [];
-
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_Live_Stream_By_Guru', responseData, req.headers.lang);
 
@@ -697,10 +696,10 @@ exports.guru_suggested_videos_by_admin = async (req, res) => {
     try {
 
         const userId = req.user._id;
-        console.log(userId, "111") 
+        console.log(userId, "111")
         const user = await User.findById(userId);
-        const { limit , guruId } = req.query;
-    
+        const { limit, guruId } = req.query;
+
         if (!user || (user.user_type !== constants.USER_TYPE.ADMIN))
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.invalid_user', {}, req.headers.lang);
 

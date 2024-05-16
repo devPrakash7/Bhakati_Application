@@ -188,7 +188,7 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
         if (!temple || temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const bookings = await Booking.find({ templeId: templeId }).populate('userId').populate('templeId').populate('TemplepujaId')
+        const bookings = await Booking.find({ templeId: templeId }).populate("TemplepujaId" , 'puja_name duration price')
             .sort()
             .limit(parseInt(limit));
 
@@ -203,17 +203,10 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
                 end_time: data.end_time,
                 created_at: data.created_at,
                 date: data.date,
-                user_name: data.userId.full_name,
-                user_email: data.userId.email,
-                user_mobile_number: data.userId.mobile_number,
-                user_id: data.userId._id,
-                temple_name: temple.temple_name,
-                temple_id: temple._id,
-                puja_id: data.TemplepujaId.pujaId,
+                puja_id: data.pujaId,
+                puja_name:data.TemplepujaId.puja_name,
                 temple_puja_id: data.TemplepujaId._id,
-                puja_name: data.TemplepujaId.puja_name,
-                puja_price: data.TemplepujaId.price,
-                duration: data.TemplepujaId.duration
+                temple_id:data.templeId
             };
         })) || [];
 
