@@ -329,17 +329,10 @@ exports.bookedListBackup = async (req, res) => {
             .sort()
             .limit(parseInt(limit));
 
-        console.log('temple_id, date:', temple_id, date);
-
-        //const templeData = await TemplePuja.find({ templeId: '663ac820a87c463938a038bd', date: date })
         const templeData = await TemplePuja.find({ templeId: temple_id, date: date })
             .populate('templeId', "temple_name _id temple_image")
             .select('templeId puja_name duration price _id pujaId date');
 
-        console.log('templeData:', templeData);
-
-        // Extract unique templeIds from booking
-        //const templeIds = bookings.map(book => new ObjectID(book.templeId));
         const templeIds = bookings.map(book => book.templeId);
 
         // Fetch temple info for the templeIds

@@ -321,9 +321,9 @@ exports.updateProfileImage = async (req, res) => {
 
         if (!req.file)
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'USER.no_image_upload', {}, req.headers.lang);
-
-        let files = req.file;
-        const profile_image_url = `${BASEURL}/uploads/${files.filename}`;
+        
+        console.log("data..." , req.file);
+        const profile_image_url = `${BASEURL}/uploads/${req.file.filename}`;
 
         const userData = await User.findOneAndUpdate({ _id: userId }, {
             $set:
