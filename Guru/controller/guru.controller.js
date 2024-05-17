@@ -276,7 +276,7 @@ exports.getGuruProfile = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const GuruData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId }).limit(limit)
+        const GuruData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId, status: 'active' }).limit(limit)
             .populate('guruId', 'guru_name guru_image _id email mobile_number gurus_id expertise created_at');
 
         const guruList = await Guru.find({ user_type: 4 }).sort().limit(limit)
@@ -301,13 +301,14 @@ exports.getGuruProfile = async (req, res) => {
             live_aarti: GuruData.map(guru => ({
                 playback_id: guru.playback_id,
                 live_stream_id: guru.live_stream_id,
+                status: guru.status,
                 stream_key: guru.stream_key,
                 guru_name: guru.guruId.guru_name,
                 guru_image_url: guru.guruId.guru_image,
                 feature_image_url: guru.guruId.background_image,
                 title: guru.title,
                 description: guru.description,
-                guru_id: guru._id,
+                guru_id: guru.guruId._id,
                 expertise: guru.guruId.expertise,
                 email: guru.guruId.email,
                 mobile_number: guru.guruId.mobile_number,
@@ -339,7 +340,7 @@ exports.getGuruProfileByAdmin = async (req, res) => {
 
         const userId = req.user._id;
         const { limit } = req.query;
-        const { guruId } = req.params;
+        const { guruId } = req.body;
 
         const users = await User.findById(userId)
 
@@ -357,9 +358,9 @@ exports.getGuruProfileByAdmin = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const GuruData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId }).limit(limit)
+        const GuruData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, guruId: guruId , status:'active' }).limit(limit)
             .populate('guruId', 'guru_name guru_image _id email mobile_number gurus_id expertise created_at');
-
+        
         const guruList = await Guru.find({ user_type: 4 }).sort().limit(limit)
 
         const responseData = {
@@ -382,6 +383,7 @@ exports.getGuruProfileByAdmin = async (req, res) => {
             live_aarti: GuruData.map(guru => ({
                 playback_id: guru.playback_id,
                 live_stream_id: guru.live_stream_id,
+                status:guru.status,
                 stream_key: guru.stream_key,
                 guru_name: guru.guruId.guru_name,
                 guru_image_url: guru.guruId.guru_image,
@@ -393,8 +395,7 @@ exports.getGuruProfileByAdmin = async (req, res) => {
                 email: guru.guruId.email,
                 mobile_number: guru.guruId.mobile_number,
                 published_date: new Date(),
-                views: '',
-                guru_id: guru.guruId._id
+                views: ''
             })) || [],
             suggested_gurus: guruList.map(guru => ({
                 guru_name: guru.guru_name,
@@ -580,7 +581,7 @@ exports.GuruCreateNewLiveStream = async (req, res) => {
             description: guruData.description,
             plackback_id: guruData.plackback_id,
             live_stream_id: guruData.live_stream_id,
-            guru_id:guruData.guruId,
+            guru_id: guruData.guruId,
             created_at: guruData.created_at,
         }
 
@@ -609,10 +610,10 @@ exports.getLiveStreamByGuru = async (req, res) => {
 
         const allGuruData = await Guru.find();
         const allGuruId = allGuruData.map(guru => guru._id);
-      
+
         const LiveStreamingData = response.data.data.map(stream => stream.id);
         const GuruData = await LiveStreaming.find({
-            live_stream_id: { $in: LiveStreamingData }, guruId: { $in: allGuruId }
+            live_stream_id: { $in: LiveStreamingData }, guruId: { $in: allGuruId }, status: 'active'
         }).limit(limit)
 
         if (!GuruData || GuruData.length == 0)
@@ -623,6 +624,7 @@ exports.getLiveStreamByGuru = async (req, res) => {
             return {
                 playback_id: guru.playback_id,
                 live_stream_id: guru.live_stream_id,
+                status: guru.status,
                 stream_key: guru.stream_key,
                 guru_id: guru.guruId,
                 title: guru.title,

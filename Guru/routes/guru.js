@@ -30,7 +30,7 @@ router.get('/getGuruLiveStream', getLiveStreamByGuru)
 router.get('/SearchAllGuru', authenticate, SearchAllGuru);
 router.get('/guruSuggestedVideos', GuruAuth, guru_suggested_videos);
 router.get('/guruSuggestedVideosByAdmin', authenticate, guru_suggested_videos_by_admin);
-router.post('/getGuruProfileByAdmin', getGuruProfileByAdmin);
+router.post('/getGuruProfileByAdmin', authenticate , getGuruProfileByAdmin);
 router.put('/updateGuruProfile', update_guru_validator, ValidatorResult, GuruAuth, updateGuruProfile)
 router.delete('/deleteGuru/:guruId', get_guru_profile_admin_validator, ValidatorResult, verifyAccessToken, guruDelete);
 router.get('/getGuruProfileByAdmin/:guruId', get_guru_profile_admin_validator, ValidatorResult, authenticate, getGuruProfileByAdmin);

@@ -251,7 +251,7 @@ exports.getTempleProfile = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId }).limit(limit)
+        const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId, status: 'active' }).limit(limit)
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number email contact_person_name category darsan puja contact_person_designation');
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit)
@@ -282,20 +282,20 @@ exports.getTempleProfile = async (req, res) => {
             live_aarti: TempleData.map(temple => ({
                 playback_id: temple.playback_id,
                 live_stream_id: temple.live_stream_id,
-                temple_id: temple._id,
-                temple_name: temple.temple_name,
-                temple_image_url: temple.temple_image,
-                mobile_number: temple.mobile_number,
-                email: temple.email,
-                user_type: temple.user_type,
-                location: temple.location,
-                state: temple.state,
-                district: temple.district,
-                contact_person_name: temple.contact_person_name,
-                contact_person_designation: temple.contact_person_designation,
+                status: temple.status,
+                temple_id: temple.templeId._id,
+                temple_name: temple.templeId.temple_name,
+                temple_image_url: temple.templeId.temple_image,
+                mobile_number: temple.templeId.mobile_number,
+                email: temple.templeId.email,
+                user_type: temple.templeId.user_type,
+                location: temple.templeId.location,
+                state: temple.templeId.state,
+                district: temple.templeId.district,
+                contact_person_name: temple.templeId.contact_person_name,
+                contact_person_designation: temple.templeId.contact_person_designation,
                 published_date: temple.created_at,
                 views: '',
-                temple_id: temple.templeId._id
             })) || [],
             suggested_temples: templeList.map(temple => ({
                 temple_id: temple._id,
@@ -338,7 +338,7 @@ exports.getTempleProfileByAdmin = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId }).limit(limit)
+        const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: templeId, status: 'active' }).limit(limit)
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number category puja darsan email contact_person_name contact_person_designation');
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit)
@@ -369,20 +369,19 @@ exports.getTempleProfileByAdmin = async (req, res) => {
             live_aarti: TempleData.map(temple => ({
                 playback_id: temple.playback_id,
                 live_stream_id: temple.live_stream_id,
-                temple_id: temple._id,
-                temple_name: temple.temple_name,
-                temple_image_url: temple.temple_image,
-                mobile_number: temple.mobile_number,
-                email: temple.email,
-                user_type: temple.user_type,
-                location: temple.location,
-                state: temple.state,
-                district: temple.district,
-                contact_person_name: temple.contact_person_name,
-                contact_person_designation: temple.contact_person_designation,
+                status: temple.status,
+                temple_id: temple.templeId._id,
+                temple_name: temple.templeId.temple_name,
+                temple_image_url: temple.templeId.temple_image,
+                mobile_number: temple.templeId.mobile_number,
+                email: temple.templeId.email,
+                location: temple.templeId.location,
+                state: temple.templeId.state,
+                district: temple.templeId.district,
+                contact_person_name: temple.templeId.contact_person_name,
+                contact_person_designation: temple.templeId.contact_person_designation,
                 published_date: temple.created_at,
                 views: '',
-                temple_id: temple.templeId._id
             })) || [],
             suggested_temples: templeList.map(temple => ({
                 temple_id: temple._id,
@@ -576,6 +575,7 @@ exports.getTempleLiveStream = async (req, res) => {
                 playback_id: livestream.playback_id,
                 live_stream_id: livestream.live_stream_id,
                 stream_key: livestream.stream_key,
+                status: livestream.status,
                 temple_id: templeDetails._id,
                 temple_name: templeDetails.temple_name,
                 temple_image_url: templeDetails.temple_image,
@@ -653,6 +653,7 @@ exports.temple_suggested_videos = async (req, res) => {
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 };
+
 
 exports.temple_suggested_videos_by_admin = async (req, res) => {
 

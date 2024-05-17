@@ -6,8 +6,6 @@ const authenticate = require("../../middleware/authenticate")
 
 
 
-
-
 router.post('/createNewLiveStream', create_liveStream_validator, ValidatorResult, authenticate, createNewLiveStream);
 router.get('/getAllLiveStreamByPuja', authenticate, getAllLiveStreamByPuja);
 

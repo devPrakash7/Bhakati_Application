@@ -3,6 +3,7 @@
 
 const LiveStreaming = require('../models/live.streaming.model');
 const Video = require("../models/uploadVideo.model");
+const LivePujaStreaming = require("../models/puja.live.streaming.model")
 
 
 
@@ -30,6 +31,13 @@ const updateLiveStreamingStatus = async (liveStreamId, status, eventType) => {
       { $set: { status, event_type: eventType } },
       { new: true }
     );
+
+    await LivePujaStreaming.findOneAndUpdate(
+      { live_stream_id: liveStreamId },
+      { $set: { status, event_type: eventType } },
+      { new: true }
+    );
+
     return liveStreamingData;
 
   } catch (err) {
@@ -38,4 +46,4 @@ const updateLiveStreamingStatus = async (liveStreamId, status, eventType) => {
   }
 };
 
-module.exports = { updateLiveStreamingStatus , updateVideoStatus };
+module.exports = { updateLiveStreamingStatus, updateVideoStatus };

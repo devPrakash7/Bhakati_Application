@@ -3,7 +3,7 @@ const dateFormat = require('../../helper/dateformat.helper');
 const { sendResponse } = require("../../services/common.service");
 const { WEB_STATUS_CODE, STATUS_CODE } = require('../../config/constants');
 const { MUX_TOKEN_ID, MUX_TOKEN_SECRET, MUXURL } = require('../../keys/development.keys');
-const LiveStreaming = require("../../models/live.streaming.model")
+const LivePujaStreaming = require("../../models/puja.live.streaming.model")
 const User = require('../../models/user.model')
 const constants = require("../../config/constants");
 const TemplePuja = require("../../models/temple.puja.model")
@@ -66,7 +66,7 @@ exports.createNewLiveStream = async (req, res) => {
             userId: userId
         };
 
-        const liveStreamingData = await LiveStreaming.create(liveStreamData);
+        const liveStreamingData = await LivePujaStreaming.create(liveStreamData);
 
         const responseData = {
             id: liveStreamingData._id,
@@ -112,7 +112,7 @@ exports.getAllLiveStreamByPuja = async (req, res) => {
 
         const LiveStreamingData = response.data.data.map(stream => stream.id);
 
-        const liveStreamData = await LiveStreaming.find({
+        const liveStreamData = await LivePujaStreaming.find({
             live_stream_id: { $in: LiveStreamingData }, userId: userId, status: 'active'
         }).limit(parseInt(limit));
 
@@ -127,6 +127,9 @@ exports.getAllLiveStreamByPuja = async (req, res) => {
                 stream_key: livestream.stream_key,
                 title: livestream.title,
                 status: livestream.status,
+                temple_puja_id:livestream.temple_puja_id,
+                user_id:livestream.userId,
+                temple_id:livestream.templeId,
                 published_date: new Date(),
                 views: '',
             };

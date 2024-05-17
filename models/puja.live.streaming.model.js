@@ -1,18 +1,24 @@
 
 
+
+
 const mongoose = require('mongoose')
 
 
-const LiveStreamSchema = new mongoose.Schema({
+const LivePujaStreamSchema = new mongoose.Schema({
 
-    guruId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Guru',
-        default: null
-    },
     templeId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'temple',
+        default: null
+    },
+    userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users',
+        default: null
+    },
+    temple_puja_id: {
+        type: mongoose.Schema.Types.ObjectId, ref: 'templepujas', 
         default: null
     },
     title: {
@@ -62,5 +68,5 @@ const LiveStreamSchema = new mongoose.Schema({
 })
 
 
-const LiveStreaming = mongoose.model('livestreaming', LiveStreamSchema);
-module.exports = LiveStreaming
+const LivePujaStreaming = mongoose.model('livepujastreaming', LivePujaStreamSchema);
+module.exports = LivePujaStreaming
