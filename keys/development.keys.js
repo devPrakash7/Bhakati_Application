@@ -1,6 +1,6 @@
 
 module.exports = {
-    'PORT': process.env.PORT || 443,
+    'PORT': process.env.PORT || 8001,
     'NODE_ENV': 'development',
     'JWT_SECRET': 'BHAKATI',
     'EMAIL_FORM': 'it.dev@eztruck.co',
