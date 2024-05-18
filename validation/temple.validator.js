@@ -84,11 +84,18 @@ exports.signup_validator = [
         .isString().withMessage('contact_person_designation should be a string')
         .trim(),
 
-        body('category')
+    body('category')
         .not()
         .isEmpty()
         .withMessage('category is required')
         .isString().withMessage('category should be a string')
+        .trim(),
+
+    body('country')
+        .not()
+        .isEmpty()
+        .withMessage('country is required')
+        .isString().withMessage('country should be a string')
         .trim(),
 
 ];
@@ -133,6 +140,24 @@ exports.delete_temple_validator = [
         .withMessage('temple_id is required')
         .isString().withMessage('temple_id should be a string')
         .isMongoId().withMessage('please enter a valid temple_id')
+        .trim(),
+]
+
+exports.temple_enable_validator = [
+
+    param('templeId')
+        .not()
+        .isEmpty()
+        .withMessage('templeId is required')
+        .isString().withMessage('templeId should be a string')
+        .isMongoId().withMessage('please enter a valid templeId')
+        .trim(),
+
+    body('status')
+        .not()
+        .isEmpty()
+        .withMessage('status is required')
+        .isBoolean().withMessage('status should be a boolean')
         .trim(),
 ]
 
@@ -311,7 +336,6 @@ exports.get_all_bank_list_validator = [
 
 exports.add_bank_validator = [
 
-
     body('account_number')
         .not()
         .isEmpty()
@@ -442,30 +466,30 @@ exports.update_pandit_details_validator = [
     oneOf([
 
         body('full_name')
-        .not()
-        .isEmpty()
-        .withMessage('full_name is required')
-        .isString().withMessage('full_name should be a string')
-        .isLength({ min: 2, max: 25 })
-        .trim(),
+            .not()
+            .isEmpty()
+            .withMessage('full_name is required')
+            .isString().withMessage('full_name should be a string')
+            .isLength({ min: 2, max: 25 })
+            .trim(),
 
-    body('email')
-        .not()
-        .isEmpty()
-        .withMessage('email is required')
-        .isString().withMessage('email should be a string')
-        .isEmail().withMessage('please enter a valid email')
-        .isLowercase().withMessage('email should be lowercase')
-        .trim(),
+        body('email')
+            .not()
+            .isEmpty()
+            .withMessage('email is required')
+            .isString().withMessage('email should be a string')
+            .isEmail().withMessage('please enter a valid email')
+            .isLowercase().withMessage('email should be lowercase')
+            .trim(),
 
-    body('mobile_number')
-        .not()
-        .isEmpty()
-        .withMessage('mobile_number is required')
-        .isString().withMessage('mobile_number should be a string')
-        .isMobilePhone().withMessage('please enter a valid mobile_number')
-        .isLength({ min: 10, max: 12 }).withMessage('mobile_number length should be 10')
-        .trim(),
+        body('mobile_number')
+            .not()
+            .isEmpty()
+            .withMessage('mobile_number is required')
+            .isString().withMessage('mobile_number should be a string')
+            .isMobilePhone().withMessage('please enter a valid mobile_number')
+            .isLength({ min: 10, max: 12 }).withMessage('mobile_number length should be 10')
+            .trim(),
     ],
         {
             message: 'please enter valid key',

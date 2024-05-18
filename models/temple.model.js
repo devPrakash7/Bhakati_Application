@@ -59,11 +59,11 @@ const templeSchema = new mongoose.Schema({
     },
     description: {
         type: String,
-        default:null
+        default: null
     },
     country: {
         type: String,
-        default:null
+        default: "india"
     },
     location: {
         type: String,
@@ -77,16 +77,7 @@ const templeSchema = new mongoose.Schema({
         type: String
     },
     puja_list: [{
-        _id: String,
-        status: String,
-        description: String,
-        date: String,
-        category: String,
-        created_at: String,
-        updated_at: String,
-        __v: Number,
-        puja_image: String,
-        puja_name: String
+        type: String
     }],
     contact_person_name: {
         type: String
@@ -105,11 +96,11 @@ const templeSchema = new mongoose.Schema({
     category: {
         type: String
     },
-    darsan: {
+    live_streaming: {
         type: Boolean,
         default: false
     },
-    puja: {
+    enable: {
         type: Boolean,
         default: false
     },
@@ -123,7 +114,6 @@ const templeSchema = new mongoose.Schema({
         type: String,
         default: null
     }
-
 });
 
 

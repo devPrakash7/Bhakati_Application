@@ -45,7 +45,12 @@ exports.signUp = async (req, res, next) => {
         reqBody.device_token = (reqBody.device_token) ? reqBody.device_token : null
         const user = await Usersave(reqBody);
 
-        let users = userResponse(user);
+        let users = {
+            email: user.email,
+            full_name:user.full_name,
+            mobile_number:user.mobile_number,
+            user_type:user.user_type,
+        }
         return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'USER.signUp_success', users, req.headers.lang);
 
     } catch (err) {

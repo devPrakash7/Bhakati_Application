@@ -14,7 +14,7 @@ const bcrypt = require('bcryptjs');
 const { TempleReponse } = require('../../ResponseData/Temple.reponse')
 const User = require('../../models/user.model');
 const axios = require('axios');
-
+const Bank = require('../../models/bankDetails.model')
 
 
 
@@ -66,14 +66,13 @@ exports.SearchAllTemples = async (req, res, next) => {
 
         if (Object.keys(query).length === 0) {
             temples = await Temple.find({ user_type: 3 })
-                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation')
+                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation enable')
                 .sort(sortOptions)
             countTemples = await Temple.countDocuments({ user_type: 3 });
         } else {
             temples = await Temple.find({ user_type: 3, ...query })
-                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation')
+                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation enable')
                 .sort(sortOptions)
-
             countTemples = await Temple.countDocuments({ user_type: 3, ...query });
         }
 
@@ -86,6 +85,7 @@ exports.SearchAllTemples = async (req, res, next) => {
             email: data.email,
             user_type: data.user_type,
             location: data.location,
+            enable: data.enable,
             description: data.description,
             country: data.country,
             state: data.state,
@@ -171,7 +171,6 @@ exports.templeDelete = async (req, res) => {
         const responseData = {
             temple_id: templeData._id,
             temple_name: templeData.temple_name,
-            temple_image_url: templeData.temple_image,
             mobile_number: templeData.mobile_number,
             email: templeData.email,
             user_type: templeData.user_type,
@@ -193,4 +192,84 @@ exports.templeDelete = async (req, res) => {
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang)
     }
 
+}
+
+
+exports.deleteBankDetails = async (req, res) => {
+
+    try {
+
+        const userId = req.user._id;
+        const { bankId } = req.params;
+        const user = await User.findById(userId);
+
+        if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const banks = await Bank.findOneAndDelete({ _id: bankId });
+
+        if (!banks)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', {}, req.headers.lang);
+
+        let data = {
+            bank_id: banks._id,
+            bank_name: banks.bank_name,
+            bank_logo: banks.bank_logo
+        } || {}
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.delete_bank_details', data, req.headers.lang);
+
+    } catch (err) {
+        console.error('Error(deleteBankDetails)....', err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+};
+
+
+
+exports.templeEnable = async (req, res) => {
+
+    try {
+
+        const userId = req.user._id;
+        const { templeId } = req.params;
+        const user = await User.findById(userId);
+        const { status } = req.body
+
+        if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const templeData = await Temple.findOneAndUpdate({ _id: templeId }, { $set: { enable: status } }, { new: true });
+
+        if (!templeData)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.not_found', {}, req.headers.lang);
+
+        const responseData = {
+            temple_id: templeData._id,
+            temple_name: templeData.temple_name,
+            mobile_number: templeData.mobile_number,
+            email: templeData.email,
+            user_type: templeData.user_type,
+            is_verify: templeData.is_verify,
+            location: templeData.location,
+            description: templeData.description,
+            enable:templeData.enable,
+            country: templeData.country,
+            state: templeData.state,
+            district: templeData.district,
+            contact_person_name: templeData.contact_person_name,
+            contact_person_designation: templeData.contact_person_designation,
+        } || {};
+
+
+        if (templeData.enable === true) {
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.temple_enable', responseData, req.headers.lang);
+        }
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.temple_disable', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.error('Error(templeEnable)....', err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
 }

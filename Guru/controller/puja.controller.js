@@ -26,13 +26,12 @@ exports.addNewPuja = async (req, res) => {
         if (!users || (users.user_type !== constants.USER_TYPE.ADMIN))
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        if (!req.files)
+        if (!req.file)
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'GURU.upload_image', {}, req.headers.lang);
 
-        const file = req.files
-        let pujaImageUrls = `${BASEURL}/uploads/${file[0].filename}`
-
-        reqBody.pujaImage = pujaImageUrls;
+        const file = req.file
+        let pujaImageUrls = `${BASEURL}/uploads/${file.filename}`
+        reqBody.puja_image = pujaImageUrls;
         reqBody.created_at = dateFormat.set_current_timestamp();
         reqBody.updated_at = dateFormat.set_current_timestamp();
 
@@ -122,9 +121,6 @@ exports.ListOfPuja = async (req, res) => {
             .limit(parseInt(limit));
 
         const totalPujas = await Puja.countDocuments(filterCondition);
-
-        if (!pujas || pujas.length === 0)
-            return sendResponse(res, constants.WEB_STATUS_CODE.NOT_FOUND, constants.STATUS_CODE.FAIL, 'PUJA.not_found', {}, req.headers.lang);
 
         const responseData = pujas.map(data => ({
             total_pujas: totalPujas,

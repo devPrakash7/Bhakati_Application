@@ -15,6 +15,11 @@ const BankSchema = new mongoose.Schema({
         type: String,
         default: null,
     },
+    master_bank_id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'bank',
+        default: null
+    },
     bank_logo: {
         type: String
     },
