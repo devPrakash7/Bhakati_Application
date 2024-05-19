@@ -34,15 +34,19 @@ const guruSchema = new mongoose.Schema({
     },
     user_type: {
         type: Number,
-        default:4
+        default: 4
     },
     expertise: {
         type: String,
         default: null
     },
+    enable: {
+        type: Boolean,
+        default: false
+    },
     background_image: {
         type: String,
-        default:null
+        default: null
     },
     description: {
         type: String,
@@ -59,14 +63,14 @@ const guruSchema = new mongoose.Schema({
         type: Boolean,
         default: true
     },
-    location:{
-        type:String
+    location: {
+        type: String
     },
-    state:{
-        type:String
+    state: {
+        type: String
     },
-    district:{
-        type:String
+    district: {
+        type: String
     },
     tokens: {
         type: String,

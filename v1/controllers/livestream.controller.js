@@ -7,6 +7,9 @@ const LivePujaStreaming = require("../../models/puja.live.streaming.model")
 const User = require('../../models/user.model')
 const constants = require("../../config/constants");
 const TemplePuja = require("../../models/temple.puja.model")
+const Temple = require('../../models/temple.model')
+const Booking = require('../../models/Booking.model')
+
 
 
 
@@ -15,11 +18,11 @@ exports.createNewLiveStream = async (req, res) => {
 
     try {
 
-        const { temple_puja_id, temple_id, description, title } = req.body;
-        const userId = req.user._id;
-        const user = await User.findById(userId);
+        const templeId = req.temple._id;
+        const { booking_id , title , description } = req.body;
+        const user = await Temple.findById(templeId);
 
-        if (!user || user.user_type !== constants.USER_TYPE.USER)
+        if (!user || user.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const requestData = {
@@ -36,7 +39,6 @@ exports.createNewLiveStream = async (req, res) => {
             }
         };
 
-
         const response = await axios.post(
             `${MUXURL}/video/v1/live-streams`,
             requestData,
@@ -47,6 +49,7 @@ exports.createNewLiveStream = async (req, res) => {
                 }
             }
         );
+
 
         const playbackIds = response.data.data.playback_ids.map(item => item.id);
 
@@ -61,10 +64,15 @@ exports.createNewLiveStream = async (req, res) => {
             live_stream_id: response.data.data.id,
             playback_id: playbackIds[0],
             created_at: response.data.data.created_at,
-            templeId: temple_id,
-            temple_puja_id: temple_puja_id,
-            userId: userId
+            bookingId: booking_id
         };
+
+        const bookingData = await Booking.findById(booking_id);
+        bookingData.is_live_streaming = true;
+        bookingData.streaming_key = response.data.data.stream_key;
+        bookingData.play_back_id = playbackIds[0];
+        bookingData.live_streaming_id = response.data.data.id;
+        await bookingData.save();
 
         const liveStreamingData = await LivePujaStreaming.create(liveStreamData);
 
@@ -76,11 +84,15 @@ exports.createNewLiveStream = async (req, res) => {
             playback_id: liveStreamingData.playback_id,
             live_stream_id: liveStreamingData.live_stream_id,
             created_at: liveStreamingData.created_at,
-            temple_id: liveStreamingData.templeId,
-            status: liveStreamingData.status,
-            temple_puja_id: liveStreamData.temple_puja_id,
-            user_id: liveStreamData.userId,
-            event_type: liveStreamingData.event_type
+            live_streaming_status: liveStreamingData.status,
+            event_type: liveStreamingData.event_type,
+            user_id: bookingData.userId,
+            temple_puja_id: bookingData.TemplepujaId,
+            temple_id: bookingData.templeId,
+            slot_id: bookingData.slotId,
+            is_live_streaming: bookingData.is_live_streaming,
+            is_complete: bookingData.is_complete,
+            booking_status: bookingData.status,
         };
 
         return sendResponse(res, WEB_STATUS_CODE.CREATED, STATUS_CODE.SUCCESS, 'LIVESTREAM.create_new_live_stream_video', responseData, req.headers.lang);
@@ -92,58 +104,6 @@ exports.createNewLiveStream = async (req, res) => {
 };
 
 
-
-exports.getAllLiveStreamByPuja = async (req, res) => {
-
-    try {
-
-        const { limit } = req.query;
-        const userId = req.user._id;
-        const user = await User.findById(userId);
-        if (!user || user.user_type !== constants.USER_TYPE.USER)
-            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
-
-        const response = await axios.get(`${MUXURL}/video/v1/live-streams`, {
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Basic ${Buffer.from(`${MUX_TOKEN_ID}:${MUX_TOKEN_SECRET}`).toString('base64')}`
-            }
-        });
-
-        const LiveStreamingData = response.data.data.map(stream => stream.id);
-
-        const liveStreamData = await LivePujaStreaming.find({
-            live_stream_id: { $in: LiveStreamingData }, userId: userId, status: 'active'
-        }).limit(parseInt(limit));
-
-        if (!liveStreamData || liveStreamData.length === 0)
-            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.Live_stream_not_found', [], req.headers.lang);
-
-        // Format the response data
-        const responseData = await Promise.all(liveStreamData.map(async livestream => {
-            return {
-                playback_id: livestream.playback_id,
-                live_stream_id: livestream.live_stream_id,
-                stream_key: livestream.stream_key,
-                title: livestream.title,
-                status: livestream.status,
-                temple_puja_id:livestream.temple_puja_id,
-                user_id:livestream.userId,
-                temple_id:livestream.templeId,
-                published_date: new Date(),
-                views: '',
-            };
-        }));
-
-        const filteredResponseData = responseData.filter(item => item !== null);
-
-        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_Live_Stream_By_Guru', filteredResponseData, req.headers.lang);
-
-    } catch (err) {
-        console.error("Error in getTempleLiveStream:", err);
-        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
-    }
-};
 
 
 

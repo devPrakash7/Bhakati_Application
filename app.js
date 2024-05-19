@@ -24,7 +24,7 @@ const app = express();
 const bodyParser = require('body-parser')
 const fs = require("fs")
 const rithualRouter = require('./Guru/routes/rithual');
-const { updateLiveStreamingStatus, updateVideoStatus } = require("./middleware/webhooks.function")
+const { updateLiveStreamingStatus, updateVideoStatus , updatePujaLiveStreamingStatus } = require("./middleware/webhooks.function")
 
 
 
@@ -69,7 +69,9 @@ app.use(cors());
 
 
 app.post("/webhooks", async (req, res) => {
+
   try {
+    
     const reqBody = req.body;
     console.log("Received webhook request ...", reqBody);
 
@@ -102,10 +104,9 @@ app.post("/webhooks", async (req, res) => {
         return res.status(400).send({ error: 'Unknown event type' });
     }
 
-    console.log("data..", status)
-
     const liveStreamingData = await updateLiveStreamingStatus(livestreamingId, status, eventType);
-    return res.status(200).send({ success: true, liveStreamingData });
+    const livePujaStreamingData = await updatePujaLiveStreamingStatus(livestreamingId, status, eventType);
+    return res.status(200).send({ success: true, liveStreamingData , livePujaStreamingData });
 
   } catch (err) {
     console.error("Error processing webhook:", err);
@@ -145,8 +146,8 @@ app.post("/webhook", async (req, res) => {
       default:
         return res.status(400).send({ error: 'Unknown event type' });
     }
-    console.log("data..", status)
-    const liveStreamingData = await updateLiveStreamingStatus(assetId, status, eventType);
+  
+    const liveStreamingData = await updateVideoStatus(assetId, status, eventType);
     return res.status(200).send({ success: true, liveStreamingData });
 
   } catch (err) {

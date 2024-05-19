@@ -124,15 +124,6 @@ exports.videoAddByGuru = async (req, res) => {
             }
         );
 
-        const muxData = {
-            playback_id: response.data.data.playback_ids[0].id,
-            mp4_support: response.data.mp4_support,
-            master_access: response.data.data.master_access,
-            encoding_tier: response.data.data.encoding_tier,
-            asset_id: response.data.data.id,
-            created_at: response.data.data.created_at
-        };
-
         const videoObject = {
             created_at: dateFormat.set_current_timestamp(),
             updated_at: dateFormat.set_current_timestamp(),
@@ -140,7 +131,12 @@ exports.videoAddByGuru = async (req, res) => {
             title: reqBody.title,
             videoUrl: videoUrl,
             guruId: guruId,
-            muxData: muxData
+            playback_id: response.data.data.playback_ids[0].id,
+            mp4_support: response.data.mp4_support,
+            master_access: response.data.data.master_access,
+            encoding_tier: response.data.data.encoding_tier,
+            asset_id: response.data.data.id,
+            created_at: response.data.data.created_at
         };
 
         const videoData = await Video.create(videoObject);
@@ -150,8 +146,8 @@ exports.videoAddByGuru = async (req, res) => {
             title: videoData.title,
             description:videoData.description,
             video_url:videoData.videoUrl,
-            asset_id:videoData.muxData.asset_id,
-            playback_id:videoData.muxData.playback_id,
+            asset_id:videoData.asset_id,
+            playback_id:videoData.playback_id,
             guruId:videoData.guruId
         } || {}
 

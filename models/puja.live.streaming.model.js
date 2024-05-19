@@ -7,18 +7,9 @@ const mongoose = require('mongoose')
 
 const LivePujaStreamSchema = new mongoose.Schema({
 
-    templeId: {
+    bookingId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'temple',
-        default: null
-    },
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'users',
-        default: null
-    },
-    temple_puja_id: {
-        type: mongoose.Schema.Types.ObjectId, ref: 'templepujas', 
+        ref: 'bookings',
         default: null
     },
     title: {

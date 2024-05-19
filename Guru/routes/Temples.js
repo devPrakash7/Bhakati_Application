@@ -10,7 +10,9 @@ const { templeLogin, logout, getTempleProfile,
     signUp,
     uploadTempleImage, webHooks,
     masterBankList,
-    temple_suggested_videos_by_admin } = require('../controller/Temple.controller');
+    temple_suggested_videos_by_admin, 
+    TempleBookingAndLiveStreamingReports,
+    templeUnderAllLiveStreamingVideos} = require('../controller/Temple.controller');
 const router = express.Router();
 const TempleAuth = require('../../middleware/temple.auth');
 const authenticate = require('../../middleware/authenticate')
@@ -52,8 +54,8 @@ router.post('/addBankDetailsByAdmin', upload.single('logo'), authenticate, addBa
 router.get('/BankList', authenticate, AllBankList);
 router.get('/masterBankList', TempleAuth, masterBankList);
 router.get("/templeSuggestVideosbyAdmin", authenticate, temple_suggested_videos_by_admin)
-
-
+router.get('/templeReports' , TempleAuth , TempleBookingAndLiveStreamingReports)
+router.get('/getAllLiveStreamingVideos' , TempleAuth , templeUnderAllLiveStreamingVideos)
 
 
 

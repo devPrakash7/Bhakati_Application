@@ -2,6 +2,8 @@
 const { sendResponse } = require('../../services/common.service')
 const constants = require('../../config/constants');
 const Temple = require('../../models/temple.model');
+const Guru = require('../../models/guru.model');
+const Booking = require('../../models/Booking.model')
 const {
     checkAdmin
 } = require("../../v1/services/user.service");
@@ -66,12 +68,12 @@ exports.SearchAllTemples = async (req, res, next) => {
 
         if (Object.keys(query).length === 0) {
             temples = await Temple.find({ user_type: 3 })
-                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation enable')
+                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation enable is_verify')
                 .sort(sortOptions)
             countTemples = await Temple.countDocuments({ user_type: 3 });
         } else {
             temples = await Temple.find({ user_type: 3, ...query })
-                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation enable')
+                .select('temple_name temple_image _id state district location mobile_number email contact_person_name contact_person_designation enable is_verify')
                 .sort(sortOptions)
             countTemples = await Temple.countDocuments({ user_type: 3, ...query });
         }
@@ -83,6 +85,7 @@ exports.SearchAllTemples = async (req, res, next) => {
             temple_image_url: data.temple_image,
             mobile_number: data.mobile_number,
             email: data.email,
+            is_verify:data.is_verify,
             user_type: data.user_type,
             location: data.location,
             enable: data.enable,
@@ -234,7 +237,6 @@ exports.templeEnable = async (req, res) => {
         const userId = req.user._id;
         const { templeId } = req.params;
         const user = await User.findById(userId);
-        const { status } = req.body
 
         if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
@@ -253,7 +255,7 @@ exports.templeEnable = async (req, res) => {
             is_verify: templeData.is_verify,
             location: templeData.location,
             description: templeData.description,
-            enable:templeData.enable,
+            enable: templeData.enable,
             country: templeData.country,
             state: templeData.state,
             district: templeData.district,
@@ -273,3 +275,94 @@ exports.templeEnable = async (req, res) => {
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 }
+
+
+exports.universalList = async (req, res) => {
+
+    try {
+
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const totalTemples = await Temple.countDocuments();
+        const totalUsers = await User.countDocuments({ user_type: 2 });
+        const totalMale = await User.countDocuments({ gender: "male" });
+        const totalFemale = await User.countDocuments({ gender: "female" });
+        const totalothers = await User.countDocuments({ gender: "others" });
+        const totalGurus = await Guru.countDocuments();
+        const totalBookings = await Booking.countDocuments();
+
+        const oneWeekAgo = new Date();
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+        const oneHourAgo = new Date();
+        oneHourAgo.setHours(oneHourAgo.getHours() - 1);
+
+        const recentUsers = await User.countDocuments({
+            created_at: { $gte: oneWeekAgo }
+        }).sort({ created_at: -1 });
+
+        const usersLastHour = await User.countDocuments({
+            created_at: { $gte: oneHourAgo }
+        }).sort({ created_at: -1 });
+
+        const responseData = {
+            totalTemples: totalTemples || 0,
+            totalUsers: totalUsers || 0,
+            totalMale: totalMale || 0,
+            totalFemale: totalFemale || 0,
+            totalothers: totalothers || 0,
+            totalBookings: totalBookings || 0,
+            totalGurus: totalGurus || 0,
+            activeUsers: recentUsers || 0,
+            recentUsers: usersLastHour || 0
+            
+        } || {}
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.temple_disable', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.error('Error(universalList)....', err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+}
+
+exports.topTemples = async (req, res, next) => {
+
+    try {
+
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        if (!user || ![constants.USER_TYPE.ADMIN, constants.USER_TYPE.USER].includes(user.user_type)) {
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+        }
+
+        const templeBookingsCount = {};
+        const bookingData = await Booking.find().populate("templeId") 
+
+        bookingData.forEach(booking => {  
+            const templeName = booking.templeId.temple_name;
+            if (templeBookingsCount[templeName]) {
+                templeBookingsCount[templeName]++;
+            } else {
+                templeBookingsCount[templeName] = 1;
+            }
+        });
+
+        const sortedTemples = Object.entries(templeBookingsCount)
+            .map(([templeName, count]) => ({ templeName, count }))
+            .sort((a, b) => b.count - a.count);
+
+        const top10Temples = sortedTemples.slice(0, 10);
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.top_temples', top10Temples, req.headers.lang);
+
+    } catch (err) {
+        console.log("err(topTemples)....", err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+};

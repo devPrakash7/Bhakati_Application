@@ -19,22 +19,13 @@ exports.create_liveStream_validator = [
         .isString().withMessage('title should be a string')
         .trim(),
 
-    body('temple_id')
+    body('booking_id')
         .not()
         .isEmpty()
-        .withMessage('templeId is required')
-        .isString().withMessage('templeId should be a string')
+        .withMessage('booking_id is required')
+        .isString().withMessage('booking_id should be a string')
         .isMongoId()
-        .withMessage('please enter a valid templeId')
-        .trim(),
-
-    body('temple_puja_id')
-        .not()
-        .isEmpty()
-        .withMessage('temple_puja_id is required')
-        .isString().withMessage('temple_puja_id should be a string')
-        .isMongoId()
-        .withMessage('please enter a valid temple_puja_id')
+        .withMessage('please enter a valid booking_id')
         .trim(),
 ];
 

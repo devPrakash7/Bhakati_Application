@@ -85,7 +85,10 @@ module.exports = {
         booked_list: "successfully get all the booked list",
         delete_slots: 'successfully delete this slot',
         temple_under_booking_list: 'successfully get all the temple under booking list',
-        all_the_slots_booked: "Today there is no slot are available all the slots are booked"
+        all_the_slots_booked: "Today there is no slot are available all the slots are booked",
+        booking_list: 'successfully get all the booking list',
+        slot_already_exist: 'this date slot already exist',
+        booking_cancel: 'this booking already canceled so that you can not create any livestreaming'
 
     },
 
@@ -126,7 +129,10 @@ module.exports = {
         temple_disable: 'temple successfully disabled',
         temple_enable: 'temple successfully enabled',
         temple_disable_by_admin: 'this temple disable by admin you can not login',
-        temple_not_verify: 'this temple was not verified once verify by admin then login'
+        temple_not_verify: 'this temple was not verified once verify by admin then login',
+        temple_reports: 'successfully get all the temple reports',
+        temple_all_live_streaming_videos: 'successfully get all the live streaming videos',
+        top_temples:'successfully get all the top temples'
     },
 
     'LIVESTREAM': {
@@ -176,7 +182,9 @@ module.exports = {
         guru_was_not_verify: 'this guru was not verifyed after verify you have to login',
         upload_success: 'image uploading successfully',
         live_stream_data_not_found: 'no live stream was not found',
-        account_verify: 'guru account verify successfully'
+        account_verify: 'guru account verify successfully',
+        guru_reports: 'successfully get all the guru reports',
+        guru_all_live_streaming_videos: 'successfully get all the live streaming videos',
     },
     "RITHUAL": {
         add_new_rithuals: "successfully add new rithuals",

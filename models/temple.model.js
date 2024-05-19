@@ -102,7 +102,7 @@ const templeSchema = new mongoose.Schema({
     },
     enable: {
         type: Boolean,
-        default: false
+        default: true
     },
     created_at: {
         type: String

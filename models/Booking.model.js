@@ -17,24 +17,48 @@ const bookingSchema = new Schema({
         default: null
     },
     templeId: {
-        type: mongoose.Schema.Types.ObjectId, ref: 'Guru',
+        type: mongoose.Schema.Types.ObjectId, ref: 'temple',
         default: null
     },
-    slotId:{
+    slotId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'slots',
         default: null
+    },
+    is_live_streaming: {
+        type: Boolean,
+        default: false,
+    },
+    is_complete: {
+        type: Boolean,
+        default: false
+    },
+    streaming_key:{
+        type:String,
+        default:null,
+    },
+    play_back_id:{
+        type:String,
+        default:null,
+    },
+    live_streaming_id:{
+        type:String,
+        default:null,
     },
     name: {
         type: String,
         default: null
     },
-    date:String,
+    date: String,
     email: {
         type: String,
         default: null
     },
     mobile_number: {
+        type: String,
+        default: null
+    },
+    status: {
         type: String,
         default: null
     },

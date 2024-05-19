@@ -18,18 +18,20 @@ const { timeToMinutes } = require('../services/booking.service')
 
 
 
-
 exports.createdNewSlot = async (req, res) => {
 
     try {
 
         const reqBody = req.body;
         const templeId = req.temple._id;
-
         const findAdmin = await Temple.findById(templeId);
 
         if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+        const existData = await Slot.findOne({ date: moment(reqBody.date, "DD/MM/YYYY").format("DD/MM/YYYY"), templeId: templeId });
+
+        if (existData)
+            return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'BOOKING.slot_already_exist', {}, req.headers.lang);
 
         reqBody.created_at = dateFormat.set_current_timestamp();
         reqBody.updated_at = dateFormat.set_current_timestamp();
@@ -70,8 +72,6 @@ exports.getAllTheSlots = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
         const slotList = await Slot.find({ templeId: templeId }).populate("templeId", "temple_name temple_image _id").limit(parseInt(limit)).sort()
-
-
 
         const responseData = slotList.map(data => ({
             //temple_id: data.templeId,
@@ -175,7 +175,6 @@ exports.deleteSlot = async (req, res) => {
 
 
 
-
 exports.TempleUnderAllTheBookings = async (req, res) => {
 
     try {
@@ -188,7 +187,7 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
         if (!temple || temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const bookings = await Booking.find({ templeId: templeId }).populate("TemplepujaId" , 'puja_name duration price')
+        const bookings = await Booking.find({ templeId: templeId }).populate("TemplepujaId", 'puja_name duration price')
             .sort()
             .limit(parseInt(limit));
 
@@ -204,9 +203,9 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
                 created_at: data.created_at,
                 date: data.date,
                 puja_id: data.pujaId,
-                puja_name:data.TemplepujaId.puja_name,
+                puja_name: data.TemplepujaId.puja_name,
                 temple_puja_id: data.TemplepujaId._id,
-                temple_id:data.templeId
+                temple_id: data.templeId
             };
         })) || [];
 
@@ -233,9 +232,7 @@ exports.bookedPuja = async (req, res) => {
         if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.USER)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const pujaData = await TemplePuja.findOne({ _id: temple_puja_id, templeId: temple_id }).populate("templeId")
-
-        console.log("data...." , pujaData)
+        const pujaData = await TemplePuja.findOne({ _id: temple_puja_id, templeId: temple_id }).populate("templeId");
 
         if (!pujaData)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.puja_not_available', {}, req.headers.lang);
@@ -261,9 +258,10 @@ exports.bookedPuja = async (req, res) => {
             mobile_number: mobile_number,
             name: name,
             is_reserved: true,
+            status: "in_progress",
             start_time: start_time,
             end_time: end_time,
-            date: moment(date, 'MM/DD/YYYY', true).format("DD/MM/YYYY"),
+            date: moment(date).format('DD/MM/YYYY'),
             created_at: dateFormat.set_current_timestamp(),
             updated_at: dateFormat.set_current_timestamp()
         };
@@ -302,7 +300,6 @@ exports.bookedPuja = async (req, res) => {
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
     }
 };
-
 
 
 
@@ -346,6 +343,7 @@ exports.bookedListBackup = async (req, res) => {
                 date: data.date,
                 user_name: data.userId.full_name,
                 user_email: data.userId.email,
+                profile_image_url: data.userId.profileImg,
                 user_mobile_number: data.userId.mobile_number,
                 user_id: data.userId._id,
                 puja: {
@@ -391,15 +389,15 @@ exports.templeBookedList = async (req, res) => {
 
         const temple_id = req.temple._id;
         const { limit, from_date, to_date } = req.query;
-        console.log("data...." , req.query)
+        console.log("data....", req.query)
 
         // Find the admin temple
         const findAdmin = await Temple.findById(temple_id);
-        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE) 
+        if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
-        
+
         // Parse the limit and dates
-        const parsedLimit = parseInt(limit, 10) || 10; 
+        const parsedLimit = parseInt(limit, 10) || 10;
         const startDate = from_date ? moment(from_date, 'DD/MM/YYYY').toDate() : null;
         const endDate = to_date ? moment(to_date, 'DD/MM/YYYY').toDate() : null;
 
@@ -412,13 +410,11 @@ exports.templeBookedList = async (req, res) => {
             };
         }
 
-        // Fetch the bookings with the specified limit
         const bookings = await Booking.find(bookingQuery)
             .populate('userId')
-            .sort({ date: -1 }) // Sort by date descending
+            .sort({ date: -1 })
             .limit(parsedLimit);
 
-        // Fetch the temple puja data within the date range
         let pujaQuery = { templeId: temple_id };
         if (startDate && endDate) {
             pujaQuery.date = {
@@ -431,12 +427,10 @@ exports.templeBookedList = async (req, res) => {
             .populate('templeId', 'temple_name _id temple_image')
             .select('templeId puja_name duration price _id pujaId date');
 
-        // Helper function to format dates to DD/MM/YYYY using moment
         const formatDate = (date) => {
             return moment(date).format('DD/MM/YYYY');
         };
 
-        // Map bookings to response data
         const responseData = bookings.map(data => {
             const temple = templePujaData.find(tp => tp.templeId._id.equals(data.templeId));
             const puja = templePujaData.find(p => p._id.equals(data.TemplepujaId));
@@ -493,41 +487,26 @@ exports.userBookedList = async (req, res) => {
         const startDate = from_date
         const endDate = to_date;
 
-
         let query = { userId: userId };
-        //let templeQuery = {templeId: temple_id};
-        let templeQuery = { templeId: '663ac820a87c463938a038bd' };
         if (startDate && endDate) {
             query.date = {
-                $gte: startDate, // greater than or equal to start date
-                $lte: endDate // less than or equal to end date
-            };
-
-            templeQuery.date = {
-                $gte: startDate, // greater than or equal to start date
-                $lte: endDate // less than or equal to end date
+                $gte: startDate,
+                $lte: endDate
             };
         }
 
-
-        const bookings = await Booking.find(query).populate('userId')
+        const bookings = await Booking.find(query).populate('userId').populate('TemplepujaId').populate('templeId')
             .sort()
             .limit(parseInt(limit));
 
-        const templeData = await TemplePuja.find(templeQuery)
-            .populate('templeId', "temple_name _id temple_image")
-            .select('templeId puja_name duration price _id pujaId date');
 
-        const templeIds = bookings.map(book => book.templeId);
-
-        // Fetch temple info for the templeIds
-        const temples = await Temple.find({ _id: { $in: templeIds } });
-        
         const responseData = await Promise.all(bookings.map(async (data) => {
             return {
                 booking_id: data._id,
-                temple_puja_id:data.TemplepujaId,
-                temple_id:data.templeId,
+                temple_puja_id: data.TemplepujaId._id,
+                temple_id: data.templeId._id,
+                temple_name: data.templeId.temple_name,
+                puja_name: data.TemplepujaId.puja_name,
                 name: data.name,
                 email: data.email,
                 mobile_number: data.mobile_number,
@@ -536,9 +515,14 @@ exports.userBookedList = async (req, res) => {
                 end_time: data.end_time,
                 created_at: data.created_at,
                 date: data.date,
+                is_live_streaming: data.is_live_streaming,
+                is_complete: data.is_complete,
                 user_id: data.userId._id,
+                profile_image_url: data.userId.profileImg,
+                streaming_key: data.streaming_key,
+                play_back_id: data.play_back_id,
+                live_streaming_id: data.live_streaming_id,
             };
-
         })) || [];
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booked_list', responseData, req.headers.lang);
@@ -698,7 +682,7 @@ function convertTo12Hour(time) {
 }
 
 const convertToLocalTime = (date) => {
-    return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 const addMinutes = (date, minutes) => {
@@ -735,11 +719,11 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
     while (currentSlotStart < slotEnd) {
         // Calculate current slot end time
         //let currentSlotEnd = new Date(currentSlotStart.getTime() + slotDurationInMinutes * 60000); 
-        let currentSlotEnd = addMinutes(currentSlotStart, slotDurationInMinutes); 
+        let currentSlotEnd = addMinutes(currentSlotStart, slotDurationInMinutes);
         //let currentSlotEnd = currentSlotStart.setMinutes(currentSlotStart.getMinutes() + slotDurationInMinutes); 
         console.log('..........currentSlotStart:', currentSlotStart);
         console.log('..........currentSlotEnd:', currentSlotEnd);
- 
+
         /**
          * Check if current slot is booked
          * 
@@ -788,8 +772,8 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 let nextSlotEnd = addMinutes(nextSlotStart, slotDurationInMinutes);
                 //console.log('nextSlotStart:', nextSlotStart); 
                 //console.log('count, nextSlotEnd:', count, convertToLocalTime(nextSlotEnd));
-                
-                
+
+
                 // Check if next slot is booked
                 const isNextSlotBooked = bookedSlots.some(slot => {
                     let bookedSlotStartTime = new Date(bookingDate + ' ' + convertTo24Hour(slot.start_time));
@@ -803,14 +787,14 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 // If next slot is not booked, include it in available slots
                 if (!isNextSlotBooked) {
                     //currentSlotEnd = nextSlotEnd;
-                    tempCurrentSlotEnd = nextSlotEnd;               
-                    totalDuration += slotDurationInMinutes;    
+                    tempCurrentSlotEnd = nextSlotEnd;
+                    totalDuration += slotDurationInMinutes;
                 } else {
                     break; // Break loop if next slot is booked
                 }
-                
+
                 //console.log('slotEndCaptured, tempCurrentSlotEnd:', slotEndCaptured, convertToLocalTime(tempCurrentSlotEnd));
-                
+
                 nextSlotStart = nextSlotEnd; // Move to start time of next next slot
             }
 
@@ -833,6 +817,8 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
     return slots;
 }
 
+
+
 exports.getSlotsWithBookedData = async (req, res) => {
 
     try {
@@ -845,7 +831,7 @@ exports.getSlotsWithBookedData = async (req, res) => {
 
         if (!findAdmin || findAdmin.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
-    
+
         const bookingDate = moment(date, "DD/MM/YYYY").format("DD/MM/YYYY")
         console.log('bookingDate:', bookingDate);
 
@@ -900,6 +886,46 @@ exports.getSlotsWithBookedData = async (req, res) => {
 
 
 
+exports.allBookingList = async (req, res) => {
 
+    try {
 
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+        const { limit } = req.query;
 
+        if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const allbookingListData = await Booking.find().limit(parseInt(limit)).sort({ created_at: -1 })
+            .populate('userId').populate("TemplepujaId").populate('templeId')
+
+        console.log("data", allbookingListData)
+
+        const responseData = allbookingListData.map(data => ({
+            full_name: data.userId.full_name,
+            user_id: data.userId._id,
+            puja_name: data.TemplepujaId.puja_name,
+            temple_puja_id: data.TemplepujaId.temple_puja_id,
+            temple_name: data.templeId.temple_name,
+            state: data.templeId.state,
+            location: data.templeId.location,
+            district: data.templeId.district,
+            slot_id: data.slotId,
+            name: data.name,
+            date_or_time: data.created_at,
+            email: data.email,
+            mobile_number: data.mobile_number,
+            is_reserved: data.is_reserved,
+            start_time: data.start_time,
+            end_time: data.start_time,
+
+        })) || []
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booking_list', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.error("Error in allBookingList:", err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+}

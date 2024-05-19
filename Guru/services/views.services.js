@@ -18,10 +18,10 @@ exports.getData = async (assetId) => {
     }
 };
 
-exports.minutesToSeconds = (minutes) => {
-    return Math.round(minutes * 60);
+exports.minutesToSeconds = (seconds) => {
+     const minutes = seconds / 60;
+     return minutes;
 }
-
 
 
 exports.verifyWebhookSignature = (payload, timestamp, secret) => {
