@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 
 const panditSchema = new mongoose.Schema({
 
-    full_name: {
+    name: {
         type: String,
     },
     mobile_number: {

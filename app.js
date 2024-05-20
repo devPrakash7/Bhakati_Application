@@ -73,12 +73,10 @@ app.post("/webhooks", async (req, res) => {
   try {
     
     const reqBody = req.body;
-    console.log("Received webhook request ...", reqBody);
+   // console.log("Received webhook request ...", reqBody);
 
     const { id: livestreamingId } = reqBody.object || {};
-    console.log("status...", reqBody.data.status)
     const eventType = reqBody.type;
-    console.log("event...", eventType)
 
     if (!livestreamingId || !eventType)
       return res.status(400).send({ error: 'Invalid webhook payload' });
@@ -122,12 +120,10 @@ app.post("/webhook", async (req, res) => {
   try {
 
     const reqBody = req.body;
-    console.log("Received webhook request ...", reqBody);
+    //console.log("Received webhook request ...", reqBody);
 
     const { id: assetId } = reqBody.object || {};
-    console.log("status...", reqBody.data.status)
     const eventType = reqBody.type;
-    console.log("event...", eventType)
 
     if (!assetId || !eventType)
       return res.status(400).send({ error: 'Invalid webhook payload' });

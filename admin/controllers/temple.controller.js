@@ -235,8 +235,10 @@ exports.templeEnable = async (req, res) => {
     try {
 
         const userId = req.user._id;
-        const { templeId } = req.params;
+        const { templeId  } = req.params;
         const user = await User.findById(userId);
+
+        const { status } = req.body;
 
         if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);

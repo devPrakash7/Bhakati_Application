@@ -53,7 +53,8 @@ const guruSchema = new mongoose.Schema({
         default: null
     },
     adharacard: {
-        type: Number
+        type: Number,
+        default:null
     },
     status: {
         type: String,
@@ -61,7 +62,7 @@ const guruSchema = new mongoose.Schema({
     },
     is_verify: {
         type: Boolean,
-        default: true
+        default: false
     },
     location: {
         type: String

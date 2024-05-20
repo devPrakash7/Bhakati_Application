@@ -35,7 +35,7 @@ const templeSchema = new mongoose.Schema({
     },
     is_verify: {
         type: Boolean,
-        default: true
+        default: false
     },
     tokens: {
         type: String,

@@ -178,11 +178,11 @@ exports.templeLogin = async (req, res) => {
                 return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, errorMsg, {}, req.headers.lang);
             }
 
-        if (temple.enable === false)
-            return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, "TEMPLE.temple_disable_by_admin", {}, req.headers.lang);
-
         if (temple.is_verify === false)
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, "TEMPLE.temple_not_verify", {}, req.headers.lang);
+
+        if (temple.enable === false)
+            return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, "TEMPLE.temple_disable_by_admin", {}, req.headers.lang);
 
         const newToken = await temple.generateAuthToken();
         const refreshToken = await temple.generateRefreshToken();
@@ -379,7 +379,7 @@ exports.getTempleProfileByAdmin = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', {}, req.headers.lang);
 
         const panditList = await Pandit.find({ templeId: templeId });
-        const bookingList = await Booking.find({ templeId: templeId });
+        const bookingList = await Booking.find({ templeId: templeId }).populate('slotId').populate('TemplepujaId')
         const videoList = await Video.find({ templeId: templeId });
 
         const responseData = {
@@ -392,6 +392,8 @@ exports.getTempleProfileByAdmin = async (req, res) => {
                 email: templeData.email,
                 user_type: templeData.user_type,
                 location: templeData.location,
+                is_verify: templeData.is_verify,
+                enable: templeData.enable,
                 category: templeData.category,
                 description: templeData.description,
                 country: templeData.country,
@@ -450,7 +452,7 @@ exports.getTempleProfileByAdmin = async (req, res) => {
                 bank_logo: null || bankDetails.bank_logo,
             } || {},
             panditList: panditList.map(data => ({
-                full_name: data.full_name,
+                full_name: data.name,
                 email: data.email,
                 mobile_number: data.mobile_number,
                 temple_id: data.templeId,
@@ -460,6 +462,9 @@ exports.getTempleProfileByAdmin = async (req, res) => {
                 booking_id: data._id,
                 name: data.name,
                 email: data.email,
+                slot_date: data.slotId.date,
+                slot_duration: data.slotId.slot_duration,
+                puja_name: data.TemplepujaId.puja_name,
                 mobile_number: data.mobile_number,
                 available: data.available,
                 start_time: data.start_time,
@@ -727,8 +732,6 @@ exports.temple_suggested_videos = async (req, res) => {
         const matchedData = response.data.data.filter(user => {
             return videoData.some(muxData => muxData.asset_id === user.id);
         });
-
-        console.log("adata" , matchedData[0].duration)
 
         const responseData = videoData.map(video => ({
             video_id: video._id,
@@ -1088,7 +1091,7 @@ exports.addpanditDetails = async (req, res) => {
 
         let data = {
             pandit_id: addpandit._id,
-            full_name: addpandit.full_name,
+            name: addpandit.name,
             email: addpandit.email,
             mobile_number: addpandit.mobile_number,
             temple_name: addpandit.templeId.temple_name,
@@ -1122,7 +1125,7 @@ exports.getAllpanditList = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.not_found_pandit', [], req.headers.lang);
 
         const responseData = pandit.map(data => ({
-            full_name: data.full_name,
+            name: data.name,
             email: data.email,
             mobile_number: data.mobile_number,
             temple_id: data.templeId,
@@ -1156,8 +1159,8 @@ exports.UpdatepanditDetails = async (req, res) => {
         if (!pandit)
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.not_found_pandit', {}, req.headers.lang);
 
-        if (reqBody.full_name) {
-            pandit.full_name = reqBody.full_name;
+        if (reqBody.name) {
+            pandit.name = reqBody.name;
         }
         if (reqBody.email) {
             pandit.email = reqBody.email;
@@ -1168,7 +1171,7 @@ exports.UpdatepanditDetails = async (req, res) => {
         await pandit.save();
 
         let data = {
-            full_name: pandit.full_name,
+            name: pandit.name,
             email: pandit.email,
             mobile_number: pandit.mobile_number,
             pandit_id: pandit._id,
@@ -1201,7 +1204,7 @@ exports.deletePanditDetails = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.not_found_pandit', {}, req.headers.lang);
 
         let data = {
-            full_name: pandit.full_name,
+            name: pandit.name,
             email: pandit.email,
             mobile_number: pandit.mobile_number,
             pandit_id: pandit._id,

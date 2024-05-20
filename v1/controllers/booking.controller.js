@@ -900,27 +900,30 @@ exports.allBookingList = async (req, res) => {
         const allbookingListData = await Booking.find().limit(parseInt(limit)).sort({ created_at: -1 })
             .populate('userId').populate("TemplepujaId").populate('templeId')
 
-        console.log("data", allbookingListData)
-
-        const responseData = allbookingListData.map(data => ({
-            full_name: data.userId.full_name,
-            user_id: data.userId._id,
-            puja_name: data.TemplepujaId.puja_name,
-            temple_puja_id: data.TemplepujaId.temple_puja_id,
-            temple_name: data.templeId.temple_name,
-            state: data.templeId.state,
-            location: data.templeId.location,
-            district: data.templeId.district,
-            slot_id: data.slotId,
-            name: data.name,
-            date_or_time: data.created_at,
-            email: data.email,
-            mobile_number: data.mobile_number,
-            is_reserved: data.is_reserved,
-            start_time: data.start_time,
-            end_time: data.start_time,
-
-        })) || []
+            const responseData = await Promise.all(allbookingListData.map(async (data) => {
+                const slotData = await Slot.findById(data.slotId);
+                return {
+                    full_name: data.userId.full_name,
+                    user_id: data.userId._id,
+                    puja_name: data.TemplepujaId.puja_name,
+                    temple_puja_id: data.TemplepujaId.temple_puja_id,
+                    temple_name: data.templeId.temple_name,
+                    state: data.templeId.state,
+                    location: data.templeId.location,
+                    district: data.templeId.district,
+                    slot_id: data.slotId,
+                    name: data.name,
+                    slot_date: slotData.date,
+                    slot_duration:slotData.slot_duration,
+                    date_or_time: data.created_at,
+                    email: data.email,
+                    mobile_number: data.mobile_number,
+                    is_reserved: data.is_reserved,
+                    start_time: slotData.start_time, 
+                    end_time: slotData.end_time 
+                };
+            })) || [];
+            
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'BOOKING.booking_list', responseData, req.headers.lang);
 

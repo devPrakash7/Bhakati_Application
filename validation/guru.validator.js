@@ -50,14 +50,6 @@ exports.add_guru_validator = [
         .isString().withMessage('description should be a string')
         .trim(),
 
-    body('adharacard')
-        .not()
-        .isEmpty()
-        .withMessage('adharacard is required')
-        .isNumeric().withMessage('adharacard should be a string')
-        .isLength({ min: 12, max: 12 }).withMessage('adharacard length should be 12')
-        .trim(),
-
         body('location')
         .not()
         .isEmpty()

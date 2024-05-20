@@ -403,12 +403,12 @@ exports.update_bank_details_validator = [
 
 exports.add_pandit_validator = [
 
-    body('full_name')
+    body('name')
         .not()
         .isEmpty()
-        .withMessage('full_name is required')
-        .isString().withMessage('full_name should be a string')
-        .isLength({ min: 2, max: 25 })
+        .withMessage('name is required')
+        .isString().withMessage('name should be a string')
+        .isLength({ min: 2, max: 30 })
         .trim(),
 
     body('email')
@@ -464,13 +464,12 @@ exports.update_pandit_details_validator = [
         .trim(),
 
     oneOf([
-
-        body('full_name')
+        body('name')
             .not()
             .isEmpty()
-            .withMessage('full_name is required')
-            .isString().withMessage('full_name should be a string')
-            .isLength({ min: 2, max: 25 })
+            .withMessage('name is required')
+            .isString().withMessage('name should be a string')
+            .isLength({ min: 2, max: 30 })
             .trim(),
 
         body('email')

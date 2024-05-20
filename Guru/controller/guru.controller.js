@@ -683,7 +683,7 @@ exports.guru_suggested_videos = async (req, res) => {
         });
 
         const responseData = videoData.map(video => ({
-            plackback_id: video.playback_id,
+            playback_id: video.playback_id,
             asset_id: video.asset_id,
             description: video.description,
             title: video.title,
