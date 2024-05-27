@@ -91,12 +91,12 @@ exports.signup_validator = [
         .isString().withMessage('category should be a string')
         .trim(),
 
-    body('country')
+    /*body('country')
         .not()
         .isEmpty()
         .withMessage('country is required')
         .isString().withMessage('country should be a string')
-        .trim(),
+        .trim(),*/
 
 ];
 
