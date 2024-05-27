@@ -233,6 +233,15 @@ exports.temple_under_puja_list = async (req, res) => {
         const templeData = await Temple.findById(temple_id);
         const pujsList = await TemplePuja.find({ templeId: temple_id }).sort({ created_at: -1 }).limit(parseInt(limit));
 
+        const pujaIds = pujsList.map(puja => puja.pujaId);
+        //console.log('------pujaIds:', pujaIds);
+        const pujaBaseList = await Puja.find({ _id: { $in: pujaIds } });
+        //console.log('------pujaBaseList:', pujaBaseList);
+
+
+        //const data1= pujaBaseList.find(p => p._id.equals('6648283256906b0bb0228e13')).puja_image;
+        //console.log('------data1:', data1);
+ 
         const responseData = {
             temple_name: templeData.temple_name || null,
             temple_id: templeData._id || null,
@@ -242,7 +251,8 @@ exports.temple_under_puja_list = async (req, res) => {
                 puja_name: puja.puja_name,
                 duration: puja.duration,
                 cost: puja.price,
-                created_at: puja.created_at
+                created_at: puja.created_at,
+                puja_image_url: pujaBaseList.find(p => p._id.equals(puja.pujaId)).puja_image
             })) || []
 
         } || {}
