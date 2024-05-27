@@ -33,7 +33,7 @@ exports.addNewRithuals = async (req, res) => {
             rithual_id: newRithuals._id,
             ritual_name: newRithuals.ritual_name,
             start_time: newRithuals.start_time,
-            end_time: newRithuals.end_time
+            end_time: newRithuals.end_time,
         }
 
         return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'RITHUAL.add_new_rithuals', responseData, req.headers.lang);

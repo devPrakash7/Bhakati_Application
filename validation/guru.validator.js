@@ -119,6 +119,18 @@ exports.get_guru_profile_admin_validator = [
 
 ]
 
+exports.get_guru_profile_user_validator = [
+
+    query('guru_id')
+        .not()
+        .isEmpty()
+        .withMessage('guru_id is required')
+        .isString().withMessage('guru_id should be a string')
+        .isMongoId().withMessage('please enter a valid guru_id')
+        .isLength({ min: 24 }).withMessage('guru_id length must be 24')
+        .trim(),
+]
+
 exports.guru_suggested_video_validator = [
 
     query('guruId')

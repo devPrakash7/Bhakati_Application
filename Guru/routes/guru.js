@@ -9,13 +9,13 @@ const { addNewGuru, SearchAllGuru, getGuruProfile, GuruCreateNewLiveStream,
     logout,
     uploadGuruImage,
     guruAccountVerify, 
-    guru_suggested_videos_by_admin,
     GuruBookingAndLiveStreamingReports,
-    guruUnderAllLiveStreamingVideos} = require('../controller/guru.controller');
+    getUserGuruProfile,
+    guru_suggested_videos_user} = require('../controller/guru.controller');
 const authenticate = require('../../middleware/authenticate');
 const upload = require('../../middleware/multer')
 const GuruAuth = require('../../middleware/guru.auth');
-const { add_guru_validator, ValidatorResult, get_guru_profile_admin_validator, create_live_validator, guru_suggested_video_validator, login_validator, upload_image_validator, update_guru_validator } = require('../../validation/guru.validator')
+const { add_guru_validator, ValidatorResult, get_guru_profile_admin_validator, create_live_validator, guru_suggested_video_validator, login_validator, upload_image_validator, update_guru_validator, get_guru_profile_user_validator } = require('../../validation/guru.validator')
 
 
 
@@ -37,7 +37,8 @@ router.get('/getGuruProfileByAdmin/:guruId', get_guru_profile_admin_validator, V
 router.put('/updateGuruProfile', GuruAuth, updateGuruProfile)
 router.get('/accountVerify/:guruId', get_guru_profile_admin_validator, ValidatorResult, authenticate, guruAccountVerify);
 router.get('/guruReports' , GuruAuth , GuruBookingAndLiveStreamingReports);
-router.get('/getAllLiveStreamingVideos' , GuruAuth , guruUnderAllLiveStreamingVideos)
+router.get('/getProfiles' , get_guru_profile_user_validator , ValidatorResult , authenticate , getUserGuruProfile)
+router.get('/guruSuggestedVideo' , get_guru_profile_user_validator , ValidatorResult , authenticate , guru_suggested_videos_user)
 
 
 

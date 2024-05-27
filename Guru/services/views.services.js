@@ -20,7 +20,7 @@ exports.getData = async (assetId) => {
 
 exports.minutesToSeconds = (seconds) => {
      const minutes = seconds / 60;
-     return minutes;
+     return parseFloat(minutes.toFixed(2));
 }
 
 

@@ -187,11 +187,12 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
         if (!temple || temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const bookings = await Booking.find({ templeId: templeId }).populate("TemplepujaId", 'puja_name duration price')
+        const bookings = await Booking.find({ templeId: templeId }).populate("TemplepujaId", 'puja_name duration price pujaId')
             .sort()
             .limit(parseInt(limit));
 
         const responseData = await Promise.all(bookings.map(async (data) => {
+            const pujaData = await Puja.findById(data.TemplepujaId.pujaId)
             return {
                 booking_id: data._id,
                 name: data.name,
@@ -205,6 +206,7 @@ exports.TempleUnderAllTheBookings = async (req, res) => {
                 puja_id: data.pujaId,
                 puja_name: data.TemplepujaId.puja_name,
                 temple_puja_id: data.TemplepujaId._id,
+                puja_image_url:pujaData.puja_image,
                 temple_id: data.templeId
             };
         })) || [];
@@ -261,10 +263,11 @@ exports.bookedPuja = async (req, res) => {
             status: "in_progress",
             start_time: start_time,
             end_time: end_time,
-            date: moment(date).format('DD/MM/YYYY'),
+            date: date,
             created_at: dateFormat.set_current_timestamp(),
             updated_at: dateFormat.set_current_timestamp()
         };
+
 
         const bookings = await Booking.create(bookingData);
 
@@ -501,6 +504,7 @@ exports.userBookedList = async (req, res) => {
 
 
         const responseData = await Promise.all(bookings.map(async (data) => {
+          const pujaData = await Puja.findById(data.TemplepujaId.pujaId)
             return {
                 booking_id: data._id,
                 temple_puja_id: data.TemplepujaId._id,
@@ -513,6 +517,7 @@ exports.userBookedList = async (req, res) => {
                 available: data.available,
                 start_time: data.start_time,
                 end_time: data.end_time,
+                puja_image_url:pujaData.puja_image,
                 created_at: data.created_at,
                 date: data.date,
                 is_live_streaming: data.is_live_streaming,

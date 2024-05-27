@@ -32,7 +32,7 @@ exports.SearchAllTemples = async (req, res, next) => {
         if (!user || ![constants.USER_TYPE.ADMIN, constants.USER_TYPE.USER].includes(user.user_type))
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        const { sort, state, templename, location, district, is_verify } = req.query;
+        const { sort, state, templename, location, district, is_verify , enable } = req.query;
 
         let query = {};
 
@@ -43,6 +43,9 @@ exports.SearchAllTemples = async (req, res, next) => {
         if (state) {
             const stateRegex = new RegExp(state.split(' ').join('|'), 'i');
             query.state = stateRegex;
+        }
+        if (enable) {
+            query.state = enable;
         }
         if (is_verify) {
             query.is_verify = is_verify;

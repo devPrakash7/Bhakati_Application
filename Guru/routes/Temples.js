@@ -1,18 +1,17 @@
 const express = require('express');
 const { templeLogin, logout, getTempleProfile,
-    addBankDetails, getBankDetails, updateBankDetails, addpanditDetails, getpanditDetails, UpdatepanditDetails,
+    addBankDetails, getBankDetails, updateBankDetails, addpanditDetails, UpdatepanditDetails,
     CreateNewLiveStreamByTemple, getTempleLiveStream, generate_refresh_tokens, temple_suggested_videos, getTempleProfileByAdmin,
     deleteBankDetails, deletePanditDetails,
     getAllpanditList,
     updateTempleProfile,
     addBankDetailsByAdmin,
-    AllBankList, updateProfileImage,
+    AllBankList,
     signUp,
-    uploadTempleImage, webHooks,
+    uploadTempleImage,
     masterBankList,
-    temple_suggested_videos_by_admin, 
     TempleBookingAndLiveStreamingReports,
-    templeUnderAllLiveStreamingVideos} = require('../controller/Temple.controller');
+    templeUnderAllLiveStreamingVideos, getUserTempleProfile, temple_suggested_videos_user} = require('../controller/Temple.controller');
 const router = express.Router();
 const TempleAuth = require('../../middleware/temple.auth');
 const authenticate = require('../../middleware/authenticate')
@@ -26,7 +25,8 @@ const { signup_validator, ValidatorResult, temple_login_validator, get_profile_t
     add_pandit_validator,
     get_pandit_validator,
     update_pandit_details_validator,
-    temple_upload_image_validator } = require('../../validation/temple.validator');
+    temple_upload_image_validator,
+    get_temple_profile_user_validator } = require('../../validation/temple.validator');
 
 
 
@@ -53,10 +53,9 @@ router.put('/updateTempleProfile', update_temple_profile_validator, ValidatorRes
 router.post('/addBankDetailsByAdmin', upload.single('logo'), authenticate, addBankDetailsByAdmin);
 router.get('/BankList', authenticate, AllBankList);
 router.get('/masterBankList', TempleAuth, masterBankList);
-router.get("/templeSuggestVideosbyAdmin", authenticate, temple_suggested_videos_by_admin)
-router.get('/templeReports' , TempleAuth , TempleBookingAndLiveStreamingReports)
-router.get('/getAllLiveStreamingVideos' , TempleAuth , templeUnderAllLiveStreamingVideos)
-
+router.get('/templeReports', TempleAuth, TempleBookingAndLiveStreamingReports)
+router.get('/getTempleProfiles', get_temple_profile_user_validator, ValidatorResult, authenticate, getUserTempleProfile)
+router.get('/templeSuggestedVideo' , get_temple_profile_user_validator, ValidatorResult, authenticate, temple_suggested_videos_user)
 
 
 

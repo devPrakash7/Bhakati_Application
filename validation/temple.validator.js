@@ -442,6 +442,18 @@ exports.get_pandit_validator = [
         .trim(),
 ]
 
+exports.get_temple_profile_user_validator = [
+
+    query('temple_id')
+        .not()
+        .isEmpty()
+        .withMessage('temple_id is required')
+        .isString().withMessage('temple_id should be a string')
+        .isMongoId().withMessage('please enter a valid temple_id')
+        .isLength({ min: 24 }).withMessage('temple_id length must be 24')
+        .trim(),
+]
+
 exports.get_all_live_streaming_validator = [
 
     query('temple_id')

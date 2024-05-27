@@ -8,6 +8,8 @@ const Video = require('../../models/uploadVideo.model')
 const { MUXURL, MUX_TOKEN_ID, MUX_TOKEN_SECRET, BASEURL } = require('../../keys/development.keys');
 const axios = require('axios');
 const { getViewerCountsToken } = require('../../services/muxSignInKey');
+const User = require('../../models/user.model')
+
 
 
 
@@ -26,11 +28,11 @@ exports.videoAddByTemple = async (req, res) => {
         if (!temple || temple.user_type !== constants.USER_TYPE.TEMPLE)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        if(!req.file)
+        if (!req.file)
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'VIDEO.no_video_upload', {}, req.headers.lang);
 
         const file = req.file;
-         const videoUrl = `${BASEURL}/uploads/${file.filename}`;
+        const videoUrl = `${BASEURL}/uploads/${file.filename}`;
 
         const requestData = {
             "input": videoUrl,
@@ -70,15 +72,15 @@ exports.videoAddByTemple = async (req, res) => {
         const responseData = {
             video_id: videoData._id,
             title: videoData.title,
-            description:videoData.description,
-            video_url:videoData.videoUrl,
-            asset_id:videoData.asset_id,
-            playback_id:videoData.playback_id,
-            templeId:videoData.templeId
+            description: videoData.description,
+            video_url: videoData.videoUrl,
+            asset_id: videoData.asset_id,
+            playback_id: videoData.playback_id,
+            templeId: videoData.templeId
 
         } || {}
 
-        return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'VIDEO.add_new_video', responseData , req.headers.lang);
+        return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'VIDEO.add_new_video', responseData, req.headers.lang);
 
     } catch (err) {
         console.log("Error(videoAddByTemple)....", err);
@@ -100,11 +102,11 @@ exports.videoAddByGuru = async (req, res) => {
         if (!guru || guru.user_type !== constants.USER_TYPE.GURU)
             return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
 
-        if(!req.file)
+        if (!req.file)
             return sendResponse(res, constants.WEB_STATUS_CODE.BAD_REQUEST, constants.STATUS_CODE.FAIL, 'VIDEO.no_video_upload', {}, req.headers.lang);
 
         const file = req.file;
-         const videoUrl = `${BASEURL}/uploads/${file.filename}`;
+        const videoUrl = `${BASEURL}/uploads/${file.filename}`;
 
         const requestData = {
             "input": videoUrl,
@@ -144,14 +146,14 @@ exports.videoAddByGuru = async (req, res) => {
         const responseData = {
             video_id: videoData._id,
             title: videoData.title,
-            description:videoData.description,
-            video_url:videoData.videoUrl,
-            asset_id:videoData.asset_id,
-            playback_id:videoData.playback_id,
-            guruId:videoData.guruId
+            description: videoData.description,
+            video_url: videoData.videoUrl,
+            asset_id: videoData.asset_id,
+            playback_id: videoData.playback_id,
+            guruId: videoData.guruId
         } || {}
 
-        return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'VIDEO.add_new_video', responseData , req.headers.lang);
+        return sendResponse(res, constants.WEB_STATUS_CODE.CREATED, constants.STATUS_CODE.SUCCESS, 'VIDEO.add_new_video', responseData, req.headers.lang);
 
     } catch (err) {
         console.log("Error(videoAddByGuru)....", err);
@@ -163,9 +165,16 @@ exports.videoAddByGuru = async (req, res) => {
 
 exports.getAllVideo = async (req, res) => {
 
-    const { sortBy = 'created_at', sortOrder = 'desc' } = req.query;
+    const { sortBy = 'created_at', sortOrder = 'desc', title } = req.query;
 
     try {
+        const userId = req.user._id;
+        const user = await User.findById(userId);
+
+        const validUserTypes = [constants.USER_TYPE.USER, constants.USER_TYPE.ADMIN];
+        if (!user || !validUserTypes.includes(user.user_type)) {
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.UNAUTHENTICATED, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+        }
 
         const response = await axios.get(
             `${MUXURL}/video/v1/assets`,
@@ -181,37 +190,35 @@ exports.getAllVideo = async (req, res) => {
             return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'LIVESTREAM.not_found_streams', [], req.headers.lang);
 
         const assetsId = response.data.data.map(asset => asset.id);
+        const query = { asset_id: { $in: assetsId } };
 
-        const videoData = await Video.find({ 'muxData.asset_id': { $in: assetsId } })
-            .sort({ [sortBy]: sortOrder })
-            .populate([
-                { path: 'guruId', select: ' _id' },
-                { path: 'guruId', select: '_id' }
-            ]);
+        if (title)
+            query.title = { $regex: title, $options: 'i' };
 
-        const matchedData = response.data.data.filter(user => {
-            return videoData.some(muxData => muxData.muxData.asset_id === user.id);
+        let videoData;
+
+        if (query) {
+            videoData = await Video.find(query).sort({ [sortBy]: sortOrder });
+        } else {
+            videoData = await Video.find().sort({ [sortBy]: sortOrder });
+        }
+
+        const responseData = videoData.map(video => {
+            const matched = response.data.data.find(user => user.id === video.asset_id);
+            return {
+                playback_id: video.playback_id,
+                asset_id: video.asset_id,
+                description: video.description,
+                title: video.title,
+                video_url: video.videoUrl,
+                video_id: video._id,
+                duration: matched ? matched.duration : null,
+                temple_id: video.templeId,
+                guru_id: video.guruId
+            };
         });
 
-        if (!videoData || videoData.length === 0)
-            return sendResponse(res, constants.WEB_STATUS_CODE.NOT_FOUND, constants.STATUS_CODE.FAIL, 'GURU.not_found', {}, req.headers.lang);
-
-
-        const responseData = videoData.map(video => ({
-            plackback_id: video.muxData.playback_id,
-            asset_id: video.muxData.asset_id,
-            description: video.description,
-            title: video.title,
-            video_url: video.videoUrl,
-            id: video._id,
-            duration: video.duration,
-            views: video.views,
-            duration: matchedData[0].duration,
-            temple_or_guru_id: video.guruId
-        }))
-
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_all_videos', responseData, req.headers.lang);
-
     } catch (err) {
         console.log("Error in getAllVideo:", err);
         return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
