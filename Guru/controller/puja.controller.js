@@ -141,6 +141,46 @@ exports.ListOfPuja = async (req, res) => {
 };
 
 
+exports.UpdatePujaByAdmin = async (req, res) => {
+
+    try {
+        
+        const { puja_id } = req.params;
+        const { category, description, puja_name } = req.body;
+        const userId = req.user._id;
+        const user = await User.findOne({ _id: userId });
+
+        if (!user || user.user_type !== constants.USER_TYPE.ADMIN)
+            return sendResponse(res, constants.WEB_STATUS_CODE.UNAUTHORIZED, constants.STATUS_CODE.FAIL, 'GENERAL.unauthorized_user', {}, req.headers.lang);
+
+        const existingPuja = await Puja.findOne({ _id: puja_id});
+
+        if (!existingPuja)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.not_found', {}, req.headers.lang);
+
+        if (puja_name) existingPuja.puja_name = puja_name;
+        if (description) existingPuja.description = description;
+        if (category) existingPuja.category = category;
+
+        await existingPuja.save();
+
+        const responseData = {
+            puja_name: existingPuja.puja_name,
+            puja_image_url: existingPuja.puja_image,
+            description: existingPuja.description,
+            category: existingPuja.category,
+            status: existingPuja.status,
+            puja_id: existingPuja._id
+        } || {}
+
+        return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'PUJA.update_puja', responseData, req.headers.lang);
+
+    } catch (err) {
+        console.log('Error(UpdatePujaByAdmin)...', err);
+        return sendResponse(res, constants.WEB_STATUS_CODE.SERVER_ERROR, constants.STATUS_CODE.FAIL, 'GENERAL.general_error_content', err.message, req.headers.lang);
+    }
+};
+
 
 exports.addPuja = async (req, res) => {
 
@@ -350,7 +390,7 @@ exports.deletePujaByAdmin = async (req, res) => {
 
     try {
 
-        const { puja_id } = req.param;
+        const { puja_id } = req.params;
         const userId = req.user._id;
         const user = await User.findOne({ _id: userId });
 

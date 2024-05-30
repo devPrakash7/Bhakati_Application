@@ -4,7 +4,6 @@ const { body, validationResult, param, query, oneOf } = require('express-validat
 
 
 
-
 exports.signup_validator = [
 
     body('temple_name')
@@ -90,15 +89,8 @@ exports.signup_validator = [
         .withMessage('category is required')
         .isString().withMessage('category should be a string')
         .trim(),
-
-    /*body('country')
-        .not()
-        .isEmpty()
-        .withMessage('country is required')
-        .isString().withMessage('country should be a string')
-        .trim(),*/
-
 ];
+
 
 
 exports.temple_login_validator = [

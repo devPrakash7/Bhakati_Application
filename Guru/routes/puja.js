@@ -1,5 +1,5 @@
 const express = require('express');
-const { addNewPuja, getAllPuja, addPuja, ListOfPuja, pujs_by_temple, deletePuja, deletePujaByAdmin, UpdatePuja, temple_under_puja_list } = require('../controller/puja.controller');
+const { addNewPuja, getAllPuja, addPuja, ListOfPuja, pujs_by_temple, deletePuja, deletePujaByAdmin, UpdatePuja, temple_under_puja_list, UpdatePujaByAdmin } = require('../controller/puja.controller');
 const router = express.Router();
 const TempleAuth = require('../../middleware/temple.auth')
 const upload = require('../../middleware/multer');
@@ -17,8 +17,8 @@ router.get('/TempleUnderAllpujaList', TempleAuth, pujs_by_temple)
 router.get('/templeUnderAllpujaList/:temple_id', authenticate, temple_under_puja_list)
 router.delete('/deletePuja', delete_puja_validator, Validator_Result, TempleAuth, deletePuja);
 router.put('/updatePuja', delete_puja_validator, Validator_Result, TempleAuth, UpdatePuja)
-router.delete('/deletePujaByAdmin', delete_puja_by_admin_validator, Validator_Result, authenticate, deletePujaByAdmin)
-
+router.delete('/deletePujaByAdmin/:puja_id', delete_puja_by_admin_validator, Validator_Result, authenticate, deletePujaByAdmin)
+router.put('/updatePujaByAdmin/:puja_id' , delete_puja_by_admin_validator, Validator_Result, authenticate, UpdatePujaByAdmin)
 
 
 

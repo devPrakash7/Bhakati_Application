@@ -20,13 +20,6 @@ exports.add_puja_validator = [
         .isString().withMessage('description should be a string')
         .trim(),
 
-    body('date')
-        .not()
-        .isEmpty()
-        .withMessage('date is required')
-        .isString().withMessage('date should be a string')
-        .trim(),
-
     body('category')
         .not()
         .isEmpty()
@@ -91,6 +84,7 @@ exports.delete_puja_by_admin_validator = [
         .trim(),
 
 ]
+
 
 
 

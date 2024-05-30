@@ -26,6 +26,8 @@ const mux = new Mux({
 });
 const Booking = require('../../models/Booking.model');
 const Rituals = require('../../models/Rituals.model')
+const moment = require('moment-timezone');
+
 
 
 
@@ -722,7 +724,9 @@ exports.CreateNewLiveStreamByTemple = async (req, res) => {
 
 
 exports.getTempleLiveStream = async (req, res) => {
+
     try {
+
         const { limit } = req.query;
 
         // Fetch live streams from MUX
@@ -758,36 +762,68 @@ exports.getTempleLiveStream = async (req, res) => {
             status: 'active'
         }).limit(parseInt(limit));
 
-        const responseData = await Promise.all(liveStreamData.map(async livestream => {
-            const templeDetails = await Temple.findOne({ _id: livestream.templeId });
-            if (!templeDetails) return null;
 
-            const ritual = await Rituals.findOne({ templeId: livestream.templeId });
-            const startTime = parseTime(currentDate, ritual.start_time);
-            const endTime = parseTime(currentDate, ritual.end_time);
-            const isLive = startTime <= now && now <= endTime;
-            return {
-                playback_id: livestream.playback_id,
-                live_stream_id: livestream.live_stream_id,
-                stream_key: livestream.stream_key,
-                status: livestream.status,
-                temple_id: templeDetails._id,
-                temple_name: templeDetails.temple_name,
-                temple_image_url: templeDetails.temple_image,
-                feature_image_url: templeDetails.background_image,
-                title: livestream.title,
-                description: livestream.description,
-                location: templeDetails.location,
-                state: templeDetails.state,
-                district: templeDetails.district,
-                published_date: new Date(),
-                views: '',
-                ritual_name: ritual.ritual_name
-            };
+        function convertUTCToISTDateTime(utcDateTime) {
+            const utcMoment = moment.utc(utcDateTime);
+            const istMoment = utcMoment.tz('Asia/Kolkata');
+            return istMoment.format('YYYY-MM-DD HH:MM:SS');
+        }
+
+        // Function to convert UTC to IST in 12-hour format
+        function convertUTCToISTTime(utcDateTime) {
+            const utcMoment = moment.utc(utcDateTime);
+            const istMoment = utcMoment.tz('Asia/Kolkata');
+            return istMoment.format('HH:MM A');
+        }
+
+        const responseData = await Promise.all(liveStreamData.map(async (livestream) => {
+            try {
+                // Fetch temple details
+                const templeDetails = await Temple.findOne({ _id: livestream.templeId });
+                if (!templeDetails) return null;
+        
+                // Fetch ritual details
+                const ritual = await Rituals.findOne({ templeId: livestream.templeId });
+        
+                // Convert start_time and end_time to IST
+                const startTimeIST = moment.tz(`${currentDate} ${ritual.start_time}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata');
+                const endTimeIST = moment.tz(`${currentDate} ${ritual.end_time}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata');
+        
+                // Get current IST time
+                const nowIST = moment().tz('Asia/Kolkata');
+        
+                const isLive = startTimeIST <= nowIST && nowIST <= endTimeIST;
+                const ritualName = isLive ? ritual.ritual_name : null;
+        
+                // Convert created_at to IST
+                const createdAtIST = convertUTCToISTDateTime(ritual.created_at);
+        
+                return {
+                    playback_id: livestream.playback_id,
+                    live_stream_id: livestream.live_stream_id,
+                    stream_key: livestream.stream_key,
+                    status: livestream.status,
+                    temple_id: templeDetails._id,
+                    temple_name: templeDetails.temple_name,
+                    temple_image_url: templeDetails.temple_image,
+                    feature_image_url: templeDetails.background_image,
+                    title: ritualName || livestream.title,
+                    description: livestream.description,
+                    location: templeDetails.location,
+                    state: templeDetails.state,
+                    district: templeDetails.district,
+                    published_date: createdAtIST,  // Using the converted IST time
+                    views: '',
+                };
+            } catch (error) {
+                console.error(`Error processing livestream with ID ${livestream.live_stream_id}:`, error);
+                return null;
+            }
         }));
-
-        // Filter out null values and send response
+        
+        // Filter out null values from the result
         const filteredResponseData = responseData.filter(item => item !== null);
+
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'GURU.get_Live_Stream_By_Guru', filteredResponseData, req.headers.lang);
 
     } catch (err) {
