@@ -364,6 +364,7 @@ exports.getUserTempleProfile = async (req, res) => {
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number email contact_person_name category darsan puja contact_person_designation');
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit)
+        const bankDetails = await TempleBankDetails.find({ templeId: temple_id });
 
         const responseData = {
             temple_data: {
@@ -388,6 +389,13 @@ exports.getUserTempleProfile = async (req, res) => {
                 contact_person_designation: templeData.contact_person_designation,
                 date_of_joining: templeData.created_at
             } || {},
+            temple_bank_details: bankDetails.map(data => ({
+                bank_id: data._id,
+                bank_name: data.bank_name,
+                account_number: data.account_number,
+                ifsc_code: data.ifsc_code,
+                bank_logo: data.bank_logo
+            })) || {},
             live_aarti: TempleData.map(temple => ({
                 playback_id: temple.playback_id,
                 live_stream_id: temple.live_stream_id,
