@@ -729,11 +729,11 @@ const convertToLocalTime = (date) => {
 }
 
 const addMinutes = (date, minutes) => {
-    console.log('===>> addMinutes to date:', date);
+    //console.log('===>> addMinutes to date:', date);
     //return date.setMinutes(date.getMinutes() + minutes);
     let newDate = new Date(date);
     newDate.setMinutes(newDate.getMinutes() + minutes);
-    console.log('===>> newDate:', newDate);
+    //console.log('===>> newDate:', newDate);
     return new Date(newDate);
 }
 
@@ -752,13 +752,23 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
     const slotStart = new Date(bookingDate + ' ' + startTime);
     const slotEnd = new Date(bookingDate + ' ' + endTime);
 
-    console.log(`slotStart:${slotStart}, slotEnd:${slotEnd}`);
+    const currentTime = new Date();
+
+    console.log(`slotStart:${slotStart}, slotEnd:${slotEnd}, currentTime:${currentTime}`);
 
 
     const slots = [];
 
     let currentSlotStart = slotStart; // Initialize current slot start time
 
+    //START: Skip past slots (Show slots current time onwards)
+    while (currentSlotStart < currentTime) {        
+        let currentSlotEnd = addMinutes(currentSlotStart, slotDurationInMinutes);
+        currentSlotStart = currentSlotEnd;
+    }
+    console.log(`-----------------------currentSlotStart:${currentSlotStart},  currentTime:${currentTime}`)
+    //END: Skip past slots
+    
     while (currentSlotStart < slotEnd) {
         // Calculate current slot end time
         //let currentSlotEnd = new Date(currentSlotStart.getTime() + slotDurationInMinutes * 60000); 
@@ -785,20 +795,7 @@ function generateTimeSlots(slotStartTime, slotEndTime, newBookDuration, slotDura
                 (currentSlotStart <= bookedSlotStartTime && currentSlotEnd >= bookedSlotEndTime);
         });
 
-        console.log('isBooked:', isBooked);
-        //console.log('currentSlotEnd - currentSlotStart:', (currentSlotEnd - currentSlotStart));
-        //console.log('newBookDurationInMinutes * 60000:', (newBookDurationInMinutes * 60000));
-
-        // If current slot is not booked and can accommodate event duration, add to available slots
-        /*if (!isBooked && (currentSlotEnd - currentSlotStart) >= newBookDurationInMinutes * 60000) {
-            //slots.push({ startTime: currentSlotStart, endTime: currentSlotEnd });
-
-            slots.push({
-                start_time: currentSlotStart.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                end_time: currentSlotEnd.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-                available: true
-            });
-        }*/
+        console.log('isBooked:', isBooked);       
 
         // If current slot is not booked, find adjacent free slots until event duration is accommodated
         if (!isBooked) {
