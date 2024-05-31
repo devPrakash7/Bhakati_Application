@@ -365,6 +365,8 @@ exports.getUserTempleProfile = async (req, res) => {
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit);
 
+        const bankDetails = await TempleBankDetails.findOne({ templeId : temple_id})
+
         const responseData = {
             temple_data: {
                 temple_id: templeData._id,
@@ -388,13 +390,6 @@ exports.getUserTempleProfile = async (req, res) => {
                 contact_person_designation: templeData.contact_person_designation,
                 date_of_joining: templeData.created_at
             } || {},
-            temple_bank_details: bankDetails.map(data => ({
-                bank_id: data._id,
-                bank_name: data.bank_name,
-                account_number: data.account_number,
-                ifsc_code: data.ifsc_code,
-                bank_logo: data.bank_logo
-            })) || {},
             live_aarti: TempleData.map(temple => ({
                 playback_id: temple.playback_id,
                 live_stream_id: temple.live_stream_id,
@@ -430,6 +425,13 @@ exports.getUserTempleProfile = async (req, res) => {
                 temple_image_url: temple.temple_image,
                 feature_image_url: temple.background_image
             })) || [],
+            temple_bank_details: {
+                bank_id: bankDetails._id,
+                bank_name: bankDetails.bank_name,
+                account_number: bankDetails.account_number,
+                ifsc_code: bankDetails.ifsc_code,
+                bank_logo: bankDetails.bank_logo
+            },
         }
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.get_temple_profile', responseData, req.headers.lang);
