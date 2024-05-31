@@ -364,7 +364,6 @@ exports.getUserTempleProfile = async (req, res) => {
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number email contact_person_name category darsan puja contact_person_designation');
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit);
-        const bank = await TempleBankDetails.findOne({ templeId: temple_id });
 
         const responseData = {
             temple_data: {
@@ -389,6 +388,13 @@ exports.getUserTempleProfile = async (req, res) => {
                 contact_person_designation: templeData.contact_person_designation,
                 date_of_joining: templeData.created_at
             } || {},
+            temple_bank_details: bankDetails.map(data => ({
+                bank_id: data._id,
+                bank_name: data.bank_name,
+                account_number: data.account_number,
+                ifsc_code: data.ifsc_code,
+                bank_logo: data.bank_logo
+            })) || {},
             live_aarti: TempleData.map(temple => ({
                 playback_id: temple.playback_id,
                 live_stream_id: temple.live_stream_id,
@@ -424,15 +430,6 @@ exports.getUserTempleProfile = async (req, res) => {
                 temple_image_url: temple.temple_image,
                 feature_image_url: temple.background_image
             })) || [],
-            bankDetails:{
-                master_bank_id: bank.master_bank_id,
-                bank_id: bank._id,
-                bank_name: bank.bank_name,
-                account_number: bank.account_number,
-                ifsc_code: bank.ifsc_code,
-                bank_logo: bank.bank_logo,
-                temple_id: bank.templeId._id
-            }
         }
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.get_temple_profile', responseData, req.headers.lang);
