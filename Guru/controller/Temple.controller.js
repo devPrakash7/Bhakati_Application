@@ -363,7 +363,8 @@ exports.getUserTempleProfile = async (req, res) => {
         const TempleData = await LiveStreaming.find({ live_stream_id: { $in: LiveStreamingData }, templeId: temple_id, status: 'active' }).limit(limit)
             .populate('templeId', 'temple_name temple_image _id state district location mobile_number email contact_person_name category darsan puja contact_person_designation');
 
-        const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit)
+        const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit);
+        const bank = await TempleBankDetails.findOne({ templeId: temple_id });
 
         const responseData = {
             temple_data: {
@@ -422,7 +423,16 @@ exports.getUserTempleProfile = async (req, res) => {
                 category: temple.category,
                 temple_image_url: temple.temple_image,
                 feature_image_url: temple.background_image
-            })) || []
+            })) || [],
+            bankDetails:{
+                master_bank_id: bank.master_bank_id,
+                bank_id: bank._id,
+                bank_name: bank.bank_name,
+                account_number: bank.account_number,
+                ifsc_code: bank.ifsc_code,
+                bank_logo: bank.bank_logo,
+                temple_id: bank.templeId._id
+            }
         }
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.get_temple_profile', responseData, req.headers.lang);
@@ -781,23 +791,23 @@ exports.getTempleLiveStream = async (req, res) => {
                 // Fetch temple details
                 const templeDetails = await Temple.findOne({ _id: livestream.templeId });
                 if (!templeDetails) return null;
-        
+
                 // Fetch ritual details
                 const ritual = await Rituals.findOne({ templeId: livestream.templeId });
-        
+
                 // Convert start_time and end_time to IST
                 const startTimeIST = moment.tz(`${currentDate} ${ritual.start_time}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata');
                 const endTimeIST = moment.tz(`${currentDate} ${ritual.end_time}`, 'YYYY-MM-DD hh:mm A', 'Asia/Kolkata');
-        
+
                 // Get current IST time
                 const nowIST = moment().tz('Asia/Kolkata');
-        
+
                 const isLive = startTimeIST <= nowIST && nowIST <= endTimeIST;
                 const ritualName = isLive ? ritual.ritual_name : null;
-        
+
                 // Convert created_at to IST
                 const createdAtIST = convertUTCToISTDateTime(ritual.created_at);
-        
+
                 return {
                     playback_id: livestream.playback_id,
                     live_stream_id: livestream.live_stream_id,
@@ -820,7 +830,7 @@ exports.getTempleLiveStream = async (req, res) => {
                 return null;
             }
         }));
-        
+
         // Filter out null values from the result
         const filteredResponseData = responseData.filter(item => item !== null);
 
