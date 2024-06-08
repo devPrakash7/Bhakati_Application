@@ -365,7 +365,10 @@ exports.getUserTempleProfile = async (req, res) => {
 
         const templeList = await Temple.find({ user_type: 3 }).sort().limit(limit);
 
-        const bankDetails = await TempleBankDetails.findOne({ templeId : temple_id})
+        const bankDetails = await TempleBankDetails.findOne({ templeId : temple_id});
+
+        if(!bankDetails)
+            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', [], req.headers.lang);
 
         const responseData = {
             temple_data: {
