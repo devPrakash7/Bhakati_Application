@@ -367,8 +367,8 @@ exports.getUserTempleProfile = async (req, res) => {
 
         const bankDetails = await TempleBankDetails.findOne({ templeId : temple_id});
 
-        if(!bankDetails)
-            return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', [], req.headers.lang);
+        //if(!bankDetails)
+         //   return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.bank_details_not_found', [], req.headers.lang);
 
         const responseData = {
             temple_data: {
@@ -428,13 +428,13 @@ exports.getUserTempleProfile = async (req, res) => {
                 temple_image_url: temple.temple_image,
                 feature_image_url: temple.background_image
             })) || [],
-            temple_bank_details: {
+            temple_bank_details: bankDetails ? {
                 bank_id: bankDetails._id,
                 bank_name: bankDetails.bank_name,
                 account_number: bankDetails.account_number,
                 ifsc_code: bankDetails.ifsc_code,
                 bank_logo: bankDetails.bank_logo
-            },
+            } : {},
         }
 
         return sendResponse(res, constants.WEB_STATUS_CODE.OK, constants.STATUS_CODE.SUCCESS, 'TEMPLE.get_temple_profile', responseData, req.headers.lang);
