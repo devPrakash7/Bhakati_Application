@@ -48,8 +48,10 @@ const updatePujaLiveStreamingStatus = async (liveStreamId, status, eventType) =>
     const liveStreamingData = await LivePujaStreaming.findOneAndUpdate(
       { live_stream_id: liveStreamId },
       { $set: { status, event_type: eventType } },
-      { new: true }
+      { new: true, upsert: true }
     );
+
+    console.log(`liveStreamId: ${liveStreamId}, status: ${status}, eventType: ${eventType},  liveStreamingData (DB Response): ${liveStreamingData}`);
 
     if (liveStreamingData.status === "idle") {
         await Booking.findOneAndUpdate({ bookingId: liveStreamingData.bookingId }, {
